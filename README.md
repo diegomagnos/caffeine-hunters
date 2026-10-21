@@ -4,13 +4,16 @@ Plataforma Web responsiva, com experiência PWA, para clubes de degustação de 
 
 O projeto está em **planejamento**. Este repositório é a fonte principal de conhecimento; ainda não há aplicação, dependências, banco configurado ou comandos de execução e testes. Esta entrega não autoriza a implementação das funcionalidades propostas.
 
-## Visão inicial
+## Visão do produto
 
-- Grupos privados com participantes convidados e regras próprias.
+- Grupos privados com múltiplos administradores, criador original preservado e regras versionadas para próximos ciclos. O fluxo de convites e aprovação de entrada ainda precisa de definição.
 - Contribuição de um café por membro a cada ciclo; sugestão inicial de frequência mensal e quantidade de 250g por membro.
-- Avaliações por membros elegíveis e média aritmética das avaliações válidas.
+- Avaliações sensoriais e nota geral direta de 1 a 5 estrelas; visibilidade após avaliação própria, edição auditada até encerramento automático e médias de notas válidas.
 - Penalidades configuráveis, preservando avaliações anteriores e o histórico das regras.
-- Rankings públicos somente com autorização explícita e dados permitidos, sem notas individuais privadas.
+- Produto compartilhado no catálogo global separado de cada contribuição privada; cadastro manual e, em fase posterior, assistência por IA com revisão humana.
+- Médias globais com autorização por grupo, desativada por padrão e revogável; rankings com ajuste bayesiano dinâmico, sem notas individuais ou identidades públicas.
+
+As [21 decisões aprovadas](docs/BUSINESS_RULES.md#as-21-decisões-aprovadas) orientam a visão completa. O [roadmap](docs/ROADMAP.md) prioriza grupos, ciclos, cadastro manual e avaliações no MVP e planeja catálogo, IA, moderação e publicação em fases posteriores. A fórmula operacional do ajuste estatístico e a métrica de popularidade continuam pendentes.
 
 ## Documentação
 
@@ -18,7 +21,7 @@ O projeto está em **planejamento**. Este repositório é a fonte principal de c
 | --- | --- |
 | [Produto](docs/PRODUCT.md) | Objetivo, funcionalidades, escopo e dúvidas de produto |
 | [Regras de negócio](docs/BUSINESS_RULES.md) | Ciclos, contribuições, avaliações, penalidades e histórico |
-| [Arquitetura](docs/ARCHITECTURE.md) | Avaliação da stack sugerida e decisões técnicas propostas |
+| [Arquitetura](docs/ARCHITECTURE.md) | Stack preservada e propostas para domínio, catálogo, IA, privacidade e rankings |
 | [Roadmap](docs/ROADMAP.md) | Etapas incrementais e critérios de revisão |
 | [Instruções para agentes](AGENTS.md) | Limites, segurança e fluxo de contribuição |
 
