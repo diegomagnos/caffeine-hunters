@@ -1,0 +1,15 @@
+node_modules/
+.next/
+next-env.d.ts
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.env*
+!.env.example
+*.pem
+*.key
+.DS_Store
+*.log
+/work/
