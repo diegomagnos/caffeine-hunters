@@ -4,7 +4,7 @@
 
 Este é um plano proposto de entregas, sem datas ou autorização automática para implementação. As [21 decisões aprovadas](BUSINESS_RULES.md#as-21-decisões-aprovadas) definem a visão funcional; o sequenciamento não remove requisitos das fases posteriores. Cada tarefa exige escopo aprovado, branch própria e Pull Request com revisão humana. Não realizar merge automático.
 
-A etapa atual é exclusivamente documental. Não instalar dependências, gerar aplicação, criar banco ou configurar infraestrutura nesta consolidação. Preservar Next.js, React, TypeScript, Tailwind CSS, PostgreSQL e evolução PWA como stack sugerida, com detalhes técnicos sujeitos a revisão.
+A consolidação documental (etapa 0) foi integrada no PR #2. A tarefa atual autoriza apenas a fundação técnica da etapa 1, com Next.js, React, TypeScript, Tailwind e CI gratuito, sem autenticação real, banco ou deploy. O [registro técnico](TECHNICAL_FOUNDATION.md) documenta a entrega e as decisões ainda pendentes. PostgreSQL e evolução PWA permanecem planejados.
 
 ## Fundação e MVP proposto
 
@@ -34,7 +34,7 @@ Responsividade, segurança, autorização, acessibilidade, auditoria e testes ac
 
 ## Decisões necessárias por dependência
 
-- Antes da fundação: autenticação, versões, acesso a dados, ambiente, hospedagem e escopo técnico.
+- Fundação: versões, ambiente local e escopo técnico registrados nesta tarefa; autenticação, acesso a dados e hospedagem ficam adiados sem bloquear a página estática. Decidi-los antes de implementar suas integrações.
 - Antes dos grupos: convites/aprovação, remoção de administradores, transferência de titularidade, permissões restantes, retenção/exclusão e dados pessoais.
 - Antes dos ciclos e avaliações: calendário, entrega, validade, características sensoriais, precisão e política aplicável de inadimplência; encerramento automático e participação no próximo ciclo já estão aprovados.
 - Antes do catálogo: identidade de Produtos, exatidão dos vínculos, duplicatas, novos cadastros e correções.

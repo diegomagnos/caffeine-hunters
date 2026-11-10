@@ -2,7 +2,7 @@
 
 Plataforma Web responsiva, com experiência PWA, para clubes de degustação de cafés em grãos ou moídos. Cada clube poderá reunir participantes em um grupo privado, organizar ciclos, acompanhar contribuições, avaliar cafés e consultar rankings.
 
-O projeto está em **planejamento**. Este repositório é a fonte principal de conhecimento; ainda não há aplicação, dependências, banco configurado ou comandos de execução e testes. Esta entrega não autoriza a implementação das funcionalidades propostas.
+O projeto está na **fundação técnica (etapa 1)**: aplicação Next.js com página inicial responsiva, sem funcionalidades de negócio, autenticação ou banco conectado. Este repositório continua sendo a fonte principal de conhecimento. As próximas etapas exigem autorização própria e revisão humana.
 
 ## Visão do produto
 
@@ -33,4 +33,50 @@ As [21 decisões aprovadas](docs/BUSINESS_RULES.md#as-21-decisões-aprovadas) or
 4. Faça apenas as alterações autorizadas, valide-as e atualize a documentação afetada.
 5. Abra um Pull Request para revisão humana. Não realize merge automaticamente.
 
-Não há instalação a executar nesta fase. Versões, gerenciador de pacotes, autenticação, migrações e hospedagem serão definidos antes da implementação. Quando aprovados e implementados, os comandos reais de preparação, execução e testes deverão ser documentados aqui, sem credenciais ou dados privados.
+## Execução local
+
+Requisitos: Node.js 24 (a versão usada está em `.nvmrc`) e npm 11.9.0. Com nvm instalado, execute `nvm install && nvm use`. As dependências e ferramentas são gratuitas; a instalação inicial requer internet.
+
+```sh
+npm ci
+npm run dev
+```
+
+Abra http://localhost:3000. Não é necessário copiar `.env.example`, criar contas ou conectar um banco. O arquivo documenta somente variáveis reservadas e vazias para integração futura. Para encerrar, use Ctrl+C.
+
+## Verificação
+
+```sh
+npx playwright install --with-deps chromium
+npm run check
+```
+
+O instalador de dependências do navegador pode exigir permissões administrativas no Linux. Em sistemas já preparados, `npx playwright install chromium` basta. O CI usa o instalador completo no runner efêmero.
+
+| Comando | Finalidade |
+| --- | --- |
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run lint` | ESLint com regras Next.js/TypeScript; zero avisos |
+| `npm run typecheck` | Geração de tipos das rotas e TypeScript estrito, inclusive em checkout limpo |
+| `npm run build` | Build de produção |
+| `npm run start` | Servidor de produção após build |
+| `npm test` | Playwright contra build de produção, iniciando/encerrando seu próprio servidor |
+| `npm run test:ui` | Interface local do Playwright |
+| `npm run check` | Lint, tipos, build e testes em sequência |
+
+Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de `npm test` isoladamente. São oito casos em Chromium, combinando projetos desktop/móvel: identificação do produto e erros de execução, navegação por teclado, ausência de overflow entre 320 e 1280 pixels e análise axe WCAG A/AA. Automação não substitui avaliação humana com leitores de tela nem testes em Safari/Firefox.
+
+## Estrutura e limites
+
+- `src/app/`: layout, metadados, página e estilos Tailwind.
+- `src/components/`: elementos visuais reutilizáveis.
+- `src/modules/`: orientação para futuros módulos, sem regras antecipadas.
+- `src/lib/server/`: fronteira documentada para persistência futura PostgreSQL/Supabase.
+- `tests/`: testes de navegador; `playwright.config.ts` controla projetos e servidor.
+- `.github/workflows/ci.yml`: verificações em PRs e na `main`, com permissões somente de leitura.
+
+As [decisões técnicas](docs/TECHNICAL_FOUNDATION.md) detalham versões, justificativas, orçamento e pendências. Não há ORM, schema, migrações, SDK Supabase ou chamadas externas em execução. Autenticação, acesso a dados e hospedagem serão definidos em suas próprias entregas. PWA permanece futura.
+
+Se o download do navegador estiver bloqueado em um ambiente que já tenha Chromium, use `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run check`; detalhes e limites no registro técnico.
+
+O CI usa runner Linux padrão gratuito em repositório público, com timeout e cancelamento de execuções obsoletas. Se a visibilidade ou as condições gratuitas mudarem, reavaliar antes de usar cotas pagas. Nenhum deploy, infraestrutura, serviço pago, cobrança automática ou credencial é configurado. Vercel Hobby e Supabase Free são apenas candidatos; o uso comercial do Hobby precisa de verificação própria antes de qualquer adoção.

@@ -4,7 +4,7 @@
 
 Ajudar clubes de degustação a organizar a troca de cafés em grãos ou moídos, acompanhar obrigações de contribuição e construir um histórico coletivo de avaliações e rankings. A experiência será Web responsiva e evoluirá para PWA.
 
-O projeto permanece em planejamento, sem aplicação, banco ou infraestrutura implementados. As **21 decisões funcionais aprovadas** estão numeradas em [Regras de negócio](BUSINESS_RULES.md). Propostas técnicas e divisão em etapas dependem de revisão; a visão completa não implica que tudo pertença ao MVP ou esteja autorizado para implementação.
+A etapa 1 contém somente a fundação técnica e uma página informativa em desenvolvimento, sem regras de negócio, autenticação, banco ou infraestrutura provisionada. As **21 decisões funcionais aprovadas** estão numeradas em [Regras de negócio](BUSINESS_RULES.md). Propostas técnicas e divisão em etapas dependem de revisão; a visão completa não implica que tudo pertença ao MVP ou esteja autorizado para implementação.
 
 ## Visão funcional aprovada
 
