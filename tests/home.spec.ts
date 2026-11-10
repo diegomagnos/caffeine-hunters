@@ -10,8 +10,8 @@ test("identifica o produto e informa o desenvolvimento sem erros de execução",
   page.on("pageerror", (error) => errors.push(error.message));
   await page.reload();
   await expect(page).toHaveTitle("Caffeine Hunters");
-  await expect(page.getByRole("heading", { level: 1, name: "Caffeine Hunters" })).toBeVisible();
-  await expect(page.getByText("Aplicativo em desenvolvimento", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Olá, Alex. Vamos descobrir um café?" })).toBeVisible();
+  await expect(page.getByText("Ambiente demonstrativo", { exact: true })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "pt-BR");
   expect(errors).toEqual([]);
 });

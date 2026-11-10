@@ -2,7 +2,7 @@
 
 Status: fundação técnica implementada para revisão humana conforme [registro técnico](TECHNICAL_FOUNDATION.md). Next.js/App Router, React, TypeScript estrito, Tailwind, npm e testes locais estão configurados. Os modelos e mecanismos funcionais abaixo continuam propostas futuras; autenticação, acesso a dados e hospedagem permanecem pendentes.
 
-A preparação de visualização gratuita usa exportação estática opt-in da página informativa, compatível com Cloudflare Pages Free conforme [procedimento e limites](../README.md#visualização-estática-gratuita--preparação). Não há infraestrutura provisionada ou publicação. O build Next.js normal e as fronteiras do monólito são preservados. Hospedagem dinâmica, sessões, autorização, persistência e jobs continuam sujeitos a decisão própria; a exportação não deve receber dados privados nem substituir autorização no servidor.
+A preparação de visualização gratuita usa exportação estática opt-in da interface demonstrativa, compatível com Cloudflare Pages Free conforme [procedimento e limites](../README.md#visualização-estática-gratuita--preparação). A main está publicada no Cloudflare Pages; esta entrega preserva a configuração existente e não provisiona infraestrutura. O build Next.js normal e as fronteiras do monólito são preservados. Hospedagem dinâmica, sessões, autorização, persistência e jobs continuam sujeitos a decisão própria; a exportação não deve receber dados privados nem substituir autorização no servidor.
 
 ## Avaliação da stack sugerida
 
@@ -136,7 +136,7 @@ Testes propostos: unitários para regras e médias; integração com PostgreSQL 
 
 ## Plano de testes para implementação futura
 
-Os testes atuais cobrem a página informativa. Para futuras entregas de negócio, planejar:
+Os testes atuais cobrem a [interface demonstrativa](INITIAL_INTERFACE.md), suas rotas e campos locais, sem validar regras de produção. Para futuras entregas de negócio, planejar:
 
 | Camada | Evidências necessárias |
 | --- | --- |

@@ -2,7 +2,10 @@ import { expect, test } from "@playwright/test";
 
 test("carrega HTML, CSS e JavaScript exportados sem servidor Next.js", async ({ page, request }) => {
   const failed: string[] = [];
-  page.on("requestfailed", (req) => failed.push(req.url()));
+  page.on("requestfailed", (req) => {
+    // O App Router pode cancelar prefetch; falhas reais continuam sendo reportadas.
+    if (req.failure()?.errorText !== "net::ERR_ABORTED") failed.push(req.url());
+  });
   page.on("response", (res) => {
     if (res.status() >= 400) failed.push(`${res.status()} ${res.url()}`);
   });

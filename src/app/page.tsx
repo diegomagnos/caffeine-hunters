@@ -1,24 +1,63 @@
+import Link from "next/link";
 import { CoffeeMark } from "@/components/coffee-mark";
-
+import { GroupCard, PageIntro } from "@/components/demo-ui";
+import { cycleHref, cycles, groups, profile } from "@/demo/data";
 export default function Home() {
+  const featuredCycle = cycles[0];
+  const featuredGroup = groups.find(
+    (group) => group.id === featuredCycle.groupId,
+  )!;
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="mx-auto flex w-full max-w-6xl items-center gap-3 px-6 py-8 sm:px-10">
-        <CoffeeMark className="h-9 w-9" />
-        <span className="text-lg font-semibold tracking-tight">Caffeine Hunters</span>
-      </header>
-      <main id="conteudo" tabIndex={-1} className="mx-auto grid w-full max-w-6xl flex-1 items-center gap-12 px-6 py-12 sm:px-10 sm:py-20 lg:grid-cols-[1.4fr_1fr]">
+    <>
+      <PageIntro
+        eyebrow="Seu ponto de encontro"
+        title={`Olá, ${profile.name}. Vamos descobrir um café?`}
+      >
+        Bons cafés. Novas descobertas. Uma experiência para compartilhar.
+      </PageIntro>
+      <section className="hero" aria-labelledby="cycle-title">
         <div>
-          <p className="mb-6 inline-flex rounded-full border border-coffee/25 px-4 py-2 text-sm font-medium">Aplicativo em desenvolvimento</p>
-          <h1 className="max-w-2xl text-4xl leading-tight font-semibold tracking-tight sm:text-6xl">Caffeine Hunters</h1>
-          <p className="mt-6 max-w-xl text-xl leading-relaxed">Bons cafés. Novas descobertas. Uma experiência para compartilhar.</p>
-          <p className="mt-5 max-w-lg leading-relaxed text-muted">Estamos preparando um espaço para clubes de degustação de café. Por enquanto, a primeira dose está em preparo.</p>
+          <p className="eyebrow">
+            Ciclo demonstrativo · {featuredCycle.period}
+          </p>
+          <h2 id="cycle-title">
+            Cada origem tem
+            <br />
+            uma boa história.
+          </h2>
+          <p>
+            Explore o ciclo {featuredCycle.name} do grupo {featuredGroup.name} e
+            conheça os cafés desta rodada.
+          </p>
+          <Link className="button light" href={cycleHref(featuredCycle.id)}>
+            Conhecer os cafés <span aria-hidden="true">→</span>
+          </Link>
         </div>
-        <div aria-hidden="true" className="flex aspect-square w-full max-w-80 items-center justify-center justify-self-center rounded-full bg-sand p-16 lg:max-w-96">
-          <CoffeeMark className="h-full w-full text-coffee" />
+        <div className="hero-mark" aria-hidden="true">
+          <CoffeeMark className="w-full h-full" />
         </div>
-      </main>
-      <footer className="mx-auto w-full max-w-6xl px-6 py-8 text-sm text-muted sm:px-10">Caffeine Hunters · Feito para quem aprecia cada xícara.</footer>
-    </div>
+      </section>
+      <section aria-labelledby="groups-title">
+        <div className="section-heading">
+          <h2 id="groups-title">Seus grupos, novas descobertas</h2>
+          <Link className="text-link" href="/grupos/">
+            Ver grupos →
+          </Link>
+        </div>
+        <div className="grid-two">
+          {groups.map((group) => (
+            <GroupCard key={group.id} group={group} />
+          ))}
+        </div>
+      </section>
+      <aside className="notice">
+        <h2>A primeira dose está em preparo</h2>
+        <p>
+          Aplicativo em desenvolvimento. Explore livremente os exemplos. Criar
+          grupos, contribuir, registrar avaliações e consultar rankings ainda
+          não estão disponíveis.
+        </p>
+      </aside>
+    </>
   );
 }

@@ -2,7 +2,7 @@
 
 Plataforma Web responsiva, com experiência PWA, para clubes de degustação de cafés em grãos ou moídos. Cada clube poderá reunir participantes em um grupo privado, organizar ciclos, acompanhar contribuições, avaliar cafés e consultar rankings.
 
-O projeto está na **fundação técnica (etapa 1)**: aplicação Next.js com página inicial responsiva, sem funcionalidades de negócio, autenticação ou banco conectado. Este repositório continua sendo a fonte principal de conhecimento. As próximas etapas exigem autorização própria e revisão humana.
+O projeto possui uma **primeira interface demonstrativa navegável**: painel, grupos, detalhes de grupo, ciclo, avaliação e perfil responsivos, com dados fictícios e sem autenticação ou banco conectado. Consulte o [registro da interface](docs/INITIAL_INTERFACE.md) para rotas, decisões e limitações. Este repositório continua sendo a fonte principal de conhecimento. As próximas etapas exigem autorização própria e revisão humana.
 
 ## Visão do produto
 
@@ -68,7 +68,7 @@ O instalador de dependências do navegador pode exigir permissões administrativ
 | `npm run test:static` | Testes contra `out/`, sem runtime Next.js |
 | `npm run check:static` | Exportação e testes estáticos em sequência |
 
-Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de `npm test` isoladamente. São oito casos em Chromium, combinando projetos desktop/móvel: identificação do produto e erros de execução, navegação por teclado, ausência de overflow entre 320 e 1280 pixels e análise axe WCAG A/AA. Automação não substitui avaliação humana com leitores de tela nem testes em Safari/Firefox.
+Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de `npm test` isoladamente. São 30 testes em Chromium no build normal e 32 na exportação estática, combinando projetos desktop/móvel. Cobrem todas as telas: identificação do produto e erros de execução, navegação por teclado, ausência de overflow entre 320 e 1280 pixels e análise axe WCAG A/AA. Automação não substitui avaliação humana com leitores de tela nem testes em Safari/Firefox.
 
 ## Estrutura e limites
 
@@ -87,9 +87,9 @@ O CI usa runner Linux padrão gratuito em repositório público, com timeout e c
 
 ## Visualização estática gratuita — preparação
 
-A página informativa atual é compatível com Cloudflare Pages Free: `/` e o layout são pré-renderizáveis, com CSS Tailwind, SVG local e fontes do sistema. Não há APIs, cookies, Server Actions, rotas dinâmicas, imagens com otimização de servidor ou acesso a dados. Componentes de servidor podem executar durante o build e não exigem um servidor na hospedagem para esta página.
+A interface demonstrativa é compatível com Cloudflare Pages Free: todas as rotas de exemplo e o layout são pré-renderizáveis, com CSS Tailwind, SVG local e fontes do sistema. Não há APIs, cookies ou Server Actions; rotas parametrizadas enumeram os exemplos no build, sem imagens com otimização de servidor ou acesso a dados. Componentes de servidor podem executar durante o build e não exigem um servidor na hospedagem para estas telas.
 
-`npm run build:static` define `NEXT_STATIC_EXPORT=1` somente no processo do build e ativa `output: "export"` em `next.config.ts`. O Next.js gera `out/index.html`, `out/404.html` e os assets de `out/_next/`. Não é necessário adaptador, Wrangler, Pages Functions nem dependência adicional. `out/` permanece ignorado pelo Git; somente esse diretório será publicado pelo Pages.
+`npm run build:static` define `NEXT_STATIC_EXPORT=1` somente no processo do build e ativa `output: "export"` em `next.config.ts`. O Next.js gera `out/index.html`, os diretórios das rotas com `index.html`, `out/404.html` e os assets de `out/_next/`. Não é necessário adaptador, Wrangler, Pages Functions nem dependência adicional. `out/` permanece ignorado pelo Git; somente esse diretório será publicado pelo Pages.
 
 O build normal (`npm run build`) e `npm run start` continuam disponíveis para a arquitetura Next.js planejada. Os dois builds compartilham `.next/`: após uma exportação, refaça `npm run build` antes de usar `npm run start` ou os testes normais. Não execute os builds em paralelo. Não defina `NEXT_STATIC_EXPORT` globalmente no desenvolvimento.
 
@@ -101,7 +101,7 @@ npm run check:static
 npm run preview:static
 ```
 
-O último comando serve apenas os arquivos locais, sem publicar nada, e termina com Ctrl+C. O servidor de verificação usa Node.js, escuta somente no loopback e não substitui a infraestrutura do Pages. Os oito testes existentes também rodam contra a exportação, além de dois casos (desktop/móvel) que verificam HTML, carregamento de CSS/JavaScript e resposta 404. A CI executa as duas sequências. A compatibilidade verificada aqui é documental, de build e de navegação local; o build remoto e o acesso real pelo Pages só poderão ser confirmados após uma publicação humana autorizada.
+O último comando serve apenas os arquivos locais, sem publicar nada, e termina com Ctrl+C. O servidor de verificação usa Node.js, escuta somente no loopback e não substitui a infraestrutura do Pages. Todos os testes de interface também rodam contra a exportação, além de dois casos (desktop/móvel) que verificam HTML, carregamento de CSS/JavaScript e resposta 404. A CI executa as duas sequências. A compatibilidade verificada aqui é documental, de build e de navegação local; o build remoto e o acesso real pelo Pages só poderão ser confirmados após uma publicação humana autorizada.
 
 ### Conectar manualmente ao Cloudflare Pages Free
 
@@ -144,6 +144,6 @@ Pages Free hospeda esta página sem serviço pago. Na documentação consultada,
 | Imagens, proxy e regras HTTP | Otimização padrão de `next/image`, proxy/middleware, redirects, rewrites e headers do servidor Next.js não rodam no export. Avaliar assets locais/loader apropriado e configuração do host quando houver necessidade. |
 | Médias públicas e revogação | Cache e arquivos publicados não implementam revogação segura nem as permissões das 21 decisões. Precisam de desenho próprio antes de qualquer dado real. |
 
-A exportação é apenas uma forma de visualizar a fundação atual; preserva App Router, componentes, fronteiras de módulos e persistência futura. Não modifica as 21 decisões nem implementa PWA ou funcionalidades de negócio. Se uma futura mudança depender de runtime, deixe o build estático apontar a incompatibilidade e reavalie infraestrutura antes de adaptar: Cloudflare Workers Free com abordagem compatível com Next.js, ou hospedagem Node.js com cota gratuita, são alternativas a comparar quanto a compatibilidade, limites e uso comercial. São propostas, sem migração ou gratuidade ilimitada presumida. Não mover regras privadas para o navegador para contornar limites do Pages.
+A exportação é uma forma de visualizar a interface demonstrativa; preserva App Router, componentes, fronteiras de módulos e persistência futura. Não modifica as 21 decisões nem implementa PWA ou funcionalidades de negócio. Se uma futura mudança depender de runtime, deixe o build estático apontar a incompatibilidade e reavalie infraestrutura antes de adaptar: Cloudflare Workers Free com abordagem compatível com Next.js, ou hospedagem Node.js com cota gratuita, são alternativas a comparar quanto a compatibilidade, limites e uso comercial. São propostas, sem migração ou gratuidade ilimitada presumida. Não mover regras privadas para o navegador para contornar limites do Pages.
 
 Referências oficiais consultadas em 10/11/2026: [Next.js Static Exports](https://nextjs.org/docs/app/guides/static-exports), [Next.js estático no Pages](https://developers.cloudflare.com/pages/framework-guides/nextjs/deploy-a-static-nextjs-site/), [build e versões](https://developers.cloudflare.com/pages/configuration/build-image/), [previews](https://developers.cloudflare.com/pages/configuration/preview-deployments/) e [limites](https://developers.cloudflare.com/pages/platform/limits/).
