@@ -2,6 +2,8 @@
 
 Status: implementação para revisão humana. Base: `main` em `f50855b`, incluindo o PR #2. O escopo autorizado nesta tarefa substitui as restrições da consolidação documental anterior apenas para esta fundação. A etapa 1 do roadmap inclui autenticação, mas esta entrega cobre somente sua base técnica.
 
+Evolução atual: [fundação de autenticação](AUTH.md) substitui o adiamento de persistência abaixo somente para Auth/perfis. O restante registra o escopo original da base técnica.
+
 ## Decisões adotadas
 
 | Escolha | Justificativa e consequência |

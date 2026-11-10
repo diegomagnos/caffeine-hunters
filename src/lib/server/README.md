@@ -1,7 +1,5 @@
 # Integrações no servidor
 
-Fronteira reservada para adaptadores de persistência PostgreSQL/Supabase, ainda sem implementação, dependências ou conexão. A página inicial não importa este diretório nem lê variáveis de banco.
+Fronteira reservada para operações futuras que exijam runtime Next.js. Na hospedagem estática não existe servidor Next.js por requisição. Auth/perfis usam `src/modules/auth` e autorização PostgreSQL/RLS no Supabase, conforme [AUTH.md](../../../docs/AUTH.md). Não adicionar credenciais administrativas ao cliente ou ao build estático.
 
-Na futura entrega de persistência, escolher ORM/SQL, migrações e estratégia de conexão em registro técnico revisável. Módulos de conexão deverão importar `server-only`, manter credenciais fora do cliente e validar autorização por operação. Se Supabase for escolhido, definir políticas de isolamento/RLS e tratamento de sessão antes de expor dados.
-
-Não assumir schema, autenticação, projeto Supabase ou plano contratado. `DATABASE_URL` e `SUPABASE_URL` em `.env.example` são reservas vazias, não requisitos de execução. Criar e testar migrações apenas na etapa autorizada, com dados sintéticos e sem exigir serviços externos para testes básicos.
+Operações futuras de grupos exigem políticas e validação próprias antes da implementação; não presumir que a guarda de interface concede autorização.

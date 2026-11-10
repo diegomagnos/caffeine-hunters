@@ -552,3 +552,8 @@ button:disabled {
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+
+.auth-card { max-width: 600px; overflow-wrap: anywhere; }
+.auth-card label { display: grid; gap: 6px; }
+.auth-card input { width: 100%; min-height: 46px; border: 1px solid #a79a88; background: #fffdf8; border-radius: 6px; padding: 10px 12px; color: var(--color-coffee); }
+.site-header nav { flex-wrap: wrap; }

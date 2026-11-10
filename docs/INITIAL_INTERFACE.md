@@ -1,5 +1,7 @@
 # Primeira interface navegável
 
+Este registro descreve o escopo do PR #5. A evolução de autenticação em `/conta/` está em [AUTH.md](AUTH.md); as rotas demonstrativas abaixo continuam sintéticas e independentes.
+
 ## Escopo e limites
 
 Demonstração pública com dados exclusivamente sintéticos, sem autenticação, banco, APIs, serviços externos, persistência, cookies ou armazenamento Web. A autorização desta entrega abrange somente a interface. As 21 decisões em BUSINESS_RULES.md permanecem inalteradas; páginas de grupo não implementam privacidade real.
