@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import {
   CoffeeList,
@@ -6,7 +6,7 @@ import {
   LockedResults,
   PageIntro,
 } from "@/components/demo-ui";
-import { contributions, cycles, groupHref } from "@/demo/data";
+import { contributions, cycles, groups, groupHref } from "@/demo/data";
 export const dynamicParams = false;
 export function generateStaticParams() {
   return cycles.map((c) => ({ cycleId: c.id }));
@@ -19,11 +19,16 @@ export default async function CyclePage({
   const { cycleId } = await params;
   const cycle = cycles.find((c) => c.id === cycleId);
   if (!cycle) notFound();
+  const group = groups.find((g) => g.id === cycle.groupId)!;
   return (
     <>
-      <Link className="text-link" href={groupHref(cycle.groupId)}>
-        ← Voltar ao grupo
-      </Link>
+      <Breadcrumbs
+        ancestors={[
+          { label: "Meus grupos", href: "/grupos/" },
+          { label: group.name, href: groupHref(group.id) },
+        ]}
+        current={cycle.name}
+      />
       <PageIntro
         eyebrow={`Ciclo demonstrativo · ${cycle.period}`}
         title={cycle.name}

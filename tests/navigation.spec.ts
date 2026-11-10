@@ -64,7 +64,7 @@ test("percorre painel, grupo, ciclo, avaliação, perfil e estado vazio", async 
 }) => {
   await page.goto("/");
   await page
-    .getByRole("navigation")
+    .getByRole("navigation", { name: "Navegação principal" })
     .getByRole("link", { name: "Meus grupos" })
     .click();
   await page
@@ -78,14 +78,14 @@ test("percorre painel, grupo, ciclo, avaliação, perfil e estado vazio", async 
     .click();
   await expect(page).toHaveURL(/\/avaliacoes\/serra-do-sol\//);
   await page
-    .getByRole("navigation")
+    .getByRole("navigation", { name: "Navegação principal" })
     .getByRole("link", { name: "Perfil" })
     .click();
   await expect(
     page.getByRole("heading", { name: "Seu histórico ainda está em preparo" }),
   ).toBeVisible();
   await page
-    .getByRole("navigation")
+    .getByRole("navigation", { name: "Navegação principal" })
     .getByRole("link", { name: "Meus grupos" })
     .click();
   await page
@@ -152,7 +152,8 @@ test("trocar de contribuição não transporta uma avaliação local", async ({
   await page.goto("/avaliacoes/serra-do-sol/");
   await page.getByRole("radio", { name: "5 estrelas", exact: true }).check();
   await page
-    .getByRole("link", { name: "Voltar ao ciclo", exact: false })
+    .getByRole("navigation", { name: "Caminho de navegação" })
+    .getByRole("link", { name: "Origens do Brasil", exact: true })
     .click();
   await page
     .getByRole("link", { name: "Explorar avaliação de Vale Sereno" })

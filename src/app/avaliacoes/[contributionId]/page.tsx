@@ -1,8 +1,14 @@
-import Link from "next/link";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import { DemoReview } from "@/components/demo-review";
 import { LockedResults, PageIntro } from "@/components/demo-ui";
-import { contributions, cycles, cycleHref } from "@/demo/data";
+import {
+  contributions,
+  cycles,
+  groups,
+  cycleHref,
+  groupHref,
+} from "@/demo/data";
 export const dynamicParams = false;
 export function generateStaticParams() {
   return contributions.map((c) => ({ contributionId: c.id }));
@@ -16,11 +22,17 @@ export default async function ReviewPage({
   const coffee = contributions.find((c) => c.id === contributionId);
   if (!coffee) notFound();
   const cycle = cycles.find((c) => c.id === coffee.cycleId)!;
+  const group = groups.find((g) => g.id === cycle.groupId)!;
   return (
     <>
-      <Link className="text-link" href={cycleHref(coffee.cycleId)}>
-        ← Voltar ao ciclo
-      </Link>
+      <Breadcrumbs
+        ancestors={[
+          { label: "Meus grupos", href: "/grupos/" },
+          { label: group.name, href: groupHref(group.id) },
+          { label: cycle.name, href: cycleHref(cycle.id) },
+        ]}
+        current={coffee.name}
+      />
       <PageIntro eyebrow="Avaliação de café · demonstração" title={coffee.name}>
         {coffee.brand} · {coffee.origin}
       </PageIntro>

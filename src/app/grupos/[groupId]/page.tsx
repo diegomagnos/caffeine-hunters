@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { notFound } from "next/navigation";
 import { CycleLink, EmptyState, PageIntro } from "@/components/demo-ui";
 import { cycles, groups } from "@/demo/data";
@@ -17,9 +17,10 @@ export default async function GroupPage({
   const cycle = cycles.find((c) => c.id === group.cycleId);
   return (
     <>
-      <Link className="text-link" href="/grupos/">
-        ← Meus grupos
-      </Link>
+      <Breadcrumbs
+        ancestors={[{ label: "Meus grupos", href: "/grupos/" }]}
+        current={group.name}
+      />
       <PageIntro
         eyebrow="Grupo fictício · experiência demonstrativa"
         title={group.name}

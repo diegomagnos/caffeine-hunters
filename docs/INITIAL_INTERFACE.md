@@ -58,3 +58,16 @@ Node 24.19.0, npm 11.9.0 e Chromium do ambiente (`/usr/bin/chromium`).
 A primeira instalação falhou porque o cache padrão do npm não era gravável neste ambiente; a repetição com cache em `/tmp` passou sem alterar dependências. Testes iniciais detectaram cancelamentos de prefetch como falhas de rede. Os observadores agora ignoram apenas `net::ERR_ABORTED`, mantendo detecção de falhas reais e respostas HTTP de erro; as suítes foram repetidas e aprovadas. Formatação usou Prettier temporariamente, sem adicioná-lo ao projeto.
 
 Build remoto/preview do Cloudflare, CI remoto, Safari/Firefox e revisão humana com leitor de tela não foram validados nesta execução local. Não houve merge nem alteração da configuração de hospedagem.
+
+
+## Ajuste de breadcrumbs no PR #5 — 10/11/2026
+
+`src/components/breadcrumbs.tsx` compartilha a navegação das páginas de grupo, ciclo e avaliação, substituindo os links isolados de retorno. Os ancestrais são links para as rotas existentes; o último item usa `aria-current="page"` e não é link. A navegação possui `aria-label="Caminho de navegação"`, lista ordenada e separadores ocultos de leitores de tela.
+
+Os nomes vêm dos dados fictícios existentes, sem modificá-los. Os estilos discretos usam os tokens atuais e permitem quebra de linha. Os estilos do menu foram limitados ao cabeçalho para não afetar os breadcrumbs; o destaque de Meus grupos permanece nas três áreas. Nenhuma alteração em regras, dependências ou infraestrutura.
+
+`tests/breadcrumbs.spec.ts` cobre as cinco rotas internas em desktop e móvel, caminhos completos, links por teclado, item atual sem link, destaque do menu e apresentação em 320/1280 px. Os testes de jornada existentes foram adaptados para distinguir as duas navegações e retornar pelo breadcrumb do ciclo. Inspeção visual local realizada nas duas larguras.
+
+Validação deste ajuste: `npm run lint`, `npm run typecheck`, `npm run build` e `npm run build:static` aprovados. `npm test -- --workers=2`: **40 aprovados**; `npm run test:static -- --workers=2`: **42 aprovados**, ambos com `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium`. Incluem axe, rotas diretas, atualização e regressão da interface. `git diff --check` aprovado.
+
+O acesso HTTP direto ao preview do Cloudflare foi impedido pelo proxy do ambiente (403 ao estabelecer a conexão). A confirmação do deploy do novo commit pela integração existente será registrada no próprio PR, distinguindo o resultado de publicação da inspeção funcional local. Nenhuma configuração de rede ou hospedagem foi alterada.

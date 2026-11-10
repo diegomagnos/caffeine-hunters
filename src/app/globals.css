@@ -121,21 +121,21 @@ p {
 .brand-dot {
   color: var(--accent);
 }
-nav {
+.site-header nav {
   display: flex;
   gap: 8px;
 }
-nav a {
+.site-header nav a {
   padding: 10px 18px;
   border-radius: 7px;
   font-size: 0.9rem;
   text-decoration: none;
 }
-nav a[aria-current] {
+.site-header nav a[aria-current] {
   background: var(--color-sand);
   font-weight: 600;
 }
-nav a:hover {
+.site-header nav a:hover {
   background: #efe8dc;
 }
 .page-shell {
@@ -454,10 +454,10 @@ button:disabled {
     padding: 20px;
     gap: 20px;
   }
-  nav {
+  .site-header nav {
     width: 100%;
   }
-  nav a {
+  .site-header nav a {
     flex: 1;
     text-align: center;
     padding-inline: 8px;
@@ -520,4 +520,35 @@ button:disabled {
   * {
     scroll-behavior: auto !important;
   }
+}
+
+.breadcrumbs {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.breadcrumbs li {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
+}
+.breadcrumbs a {
+  display: inline-block;
+  padding: 6px 0;
+  overflow-wrap: anywhere;
+}
+.breadcrumbs [aria-current="page"] {
+  color: var(--color-coffee);
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }

@@ -68,7 +68,7 @@ O instalador de dependências do navegador pode exigir permissões administrativ
 | `npm run test:static` | Testes contra `out/`, sem runtime Next.js |
 | `npm run check:static` | Exportação e testes estáticos em sequência |
 
-Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de `npm test` isoladamente. São 30 testes em Chromium no build normal e 32 na exportação estática, combinando projetos desktop/móvel. Cobrem todas as telas: identificação do produto e erros de execução, navegação por teclado, ausência de overflow entre 320 e 1280 pixels e análise axe WCAG A/AA. Automação não substitui avaliação humana com leitores de tela nem testes em Safari/Firefox.
+Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de `npm test` isoladamente. São 40 testes em Chromium no build normal e 42 na exportação estática, combinando projetos desktop/móvel. Cobrem todas as telas: identificação do produto e erros de execução, navegação por teclado, ausência de overflow entre 320 e 1280 pixels e análise axe WCAG A/AA. Automação não substitui avaliação humana com leitores de tela nem testes em Safari/Firefox.
 
 ## Estrutura e limites
 
