@@ -1,6 +1,6 @@
 # Proposta de arquitetura
 
-Status: proposta para revisão humana. Nenhuma dependência instalada ou funcionalidade implementada. Versões, biblioteca de autenticação, acesso a dados e hospedagem não estão decididos.
+Status: fundação técnica implementada para revisão humana conforme [registro técnico](TECHNICAL_FOUNDATION.md). Next.js/App Router, React, TypeScript estrito, Tailwind, npm e testes locais estão configurados. Os modelos e mecanismos funcionais abaixo continuam propostas futuras; autenticação, acesso a dados e hospedagem permanecem pendentes.
 
 ## Avaliação da stack sugerida
 
@@ -126,15 +126,15 @@ Prever consultas para ranking geral, filtros por atributos, categorias, mais ava
 
 ## Operação e qualidade propostas
 
-Após aprovação, selecionar versões suportadas e compatíveis de Node.js, Next.js, React, TypeScript, Tailwind e PostgreSQL; registrar versões, gerenciador e lockfile. Não fixar versões presumidas nesta etapa.
+As versões adotadas na fundação, o gerenciador npm e o lockfile estão registrados em [Fundação técnica](TECHNICAL_FOUNDATION.md). A versão de PostgreSQL será escolhida na etapa de persistência.
 
 Documentar configuração local e variáveis sem segredos, migrações e dados sintéticos. Separar ambientes de desenvolvimento, teste e produção. Escolher hospedagem considerando HTTPS, conexões PostgreSQL, backups e restauração testada. Observabilidade deverá cobrir erros e saúde do serviço sem expor informações privadas.
 
-Testes propostos: unitários para regras e médias; integração com PostgreSQL para isolamento, autorização, transações e migrações; testes de ponta a ponta para ciclo completo, bloqueio/regularização e publicação/revogação; verificações de acessibilidade e instalação PWA quando disponíveis. CI deverá executar checks de tipos, lint, testes relevantes e build conforme os scripts aprovados. Não há esses comandos ou testes no repositório neste momento.
+Testes propostos: unitários para regras e médias; integração com PostgreSQL para isolamento, autorização, transações e migrações; testes de ponta a ponta para ciclo completo, bloqueio/regularização e publicação/revogação; verificações de acessibilidade e instalação PWA quando disponíveis. CI deverá executar checks de tipos, lint, testes relevantes e build conforme os scripts aprovados. A fundação já executa lint, tipos, build e testes de navegador; comandos no [README](../README.md). Os testes de negócio, PostgreSQL e PWA continuam futuros.
 
 ## Plano de testes para implementação futura
 
-Nenhum teste de aplicação existe ou foi executado nesta entrega documental. Planejar:
+Os testes atuais cobrem a página informativa. Para futuras entregas de negócio, planejar:
 
 | Camada | Evidências necessárias |
 | --- | --- |
@@ -147,8 +147,8 @@ Nenhum teste de aplicação existe ou foi executado nesta entrega documental. Pl
 | Publicação e rankings | Opção inicial desativada; autorizações/revogações concorrentes com trabalhos e caches; parâmetros sem dados não autorizados; ranking geral, categorias, filtros e mais avaliados; popularidade somente após métrica aprovada |
 | Jornada e acessibilidade | Ciclo completo, bloqueio/regularização, saída com pendências, formulário de estrelas por teclado/leitor de tela, dispositivos móveis/desktop e instalação PWA quando entregue |
 
-Antes de automatizar critérios pendentes, aprovar resultados esperados. As verificações atuais são somente documentais; não instalar ferramentas ou criar aplicação para satisfazer esse plano.
+Antes de automatizar critérios pendentes, aprovar resultados esperados. A implementação desses testes de negócio depende da autorização da etapa correspondente; a fundação não os antecipa.
 
 ## Decisões pendentes
 
-Autenticação, permissões restantes, ORM/biblioteca SQL, versões, infraestrutura, fila/agendador, fornecedores/custos de IA, política de cache, retenção, proteção contra inferência e detalhes offline dependem de revisão. O encerramento automático é requisito aprovado; seu mecanismo técnico ainda será escolhido. `m` dinâmico é requisito aprovado; sua fórmula operacional, estabilidade e periodicidade permanecem pendentes. Registrar futuras decisões com contexto, alternativas, consequência e status, mantendo este documento e as regras de negócio atualizados.
+Autenticação, permissões restantes, ORM/biblioteca SQL, versão de PostgreSQL, infraestrutura, fila/agendador, fornecedores/custos de IA, política de cache, retenção, proteção contra inferência e detalhes offline dependem de revisão. O encerramento automático é requisito aprovado; seu mecanismo técnico ainda será escolhido. `m` dinâmico é requisito aprovado; sua fórmula operacional, estabilidade e periodicidade permanecem pendentes. Registrar futuras decisões com contexto, alternativas, consequência e status, mantendo este documento e as regras de negócio atualizados.
