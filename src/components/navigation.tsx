@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 const links = [
+  { href: "/conta/entrar/", label: "Conta" },
   { href: "/", label: "Início" },
   { href: "/grupos/", label: "Meus grupos" },
   { href: "/perfil/", label: "Perfil" },
@@ -14,7 +15,8 @@ export function Navigation() {
         const active =
           href === "/"
             ? pathname === "/"
-            : pathname.startsWith(href.replace(/\/$/, "")) ||
+            : (href === "/conta/entrar/" && pathname.startsWith("/conta/")) ||
+              pathname.startsWith(href.replace(/\/$/, "")) ||
               (href === "/grupos/" &&
                 /^\/(ciclos|avaliacoes)\//.test(pathname));
         return (

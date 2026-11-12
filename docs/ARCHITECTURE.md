@@ -1,8 +1,8 @@
 # Proposta de arquitetura
 
-Status: fundação técnica implementada para revisão humana conforme [registro técnico](TECHNICAL_FOUNDATION.md). Next.js/App Router, React, TypeScript estrito, Tailwind, npm e testes locais estão configurados. Os modelos e mecanismos funcionais abaixo continuam propostas futuras; autenticação, acesso a dados e hospedagem permanecem pendentes.
+Status: fundação técnica implementada para revisão humana conforme [registro técnico](TECHNICAL_FOUNDATION.md). Next.js/App Router, React, TypeScript estrito, Tailwind, npm e testes locais estão configurados. Os modelos e mecanismos funcionais abaixo continuam propostas futuras; autenticação e perfis mínimos foram implementados com Supabase conforme [AUTH.md](AUTH.md); acesso a dados de grupos permanece futuro.
 
-A preparação de visualização gratuita usa exportação estática opt-in da interface demonstrativa, compatível com Cloudflare Pages Free conforme [procedimento e limites](../README.md#visualização-estática-gratuita--preparação). A main está publicada no Cloudflare Pages; esta entrega preserva a configuração existente e não provisiona infraestrutura. O build Next.js normal e as fronteiras do monólito são preservados. Hospedagem dinâmica, sessões, autorização, persistência e jobs continuam sujeitos a decisão própria; a exportação não deve receber dados privados nem substituir autorização no servidor.
+A preparação de visualização gratuita usa exportação estática opt-in da interface demonstrativa, compatível com Cloudflare Pages Free conforme [procedimento e limites](../README.md#visualização-estática-gratuita--preparação). A main está publicada no Cloudflare Pages; esta entrega preserva a configuração existente e não provisiona infraestrutura. O build Next.js normal e as fronteiras do monólito são preservados. Sessão no cliente usa o SDK oficial, e autorização/persistência de perfis usam o backend Supabase/RLS. Hospedagem dinâmica, dados de grupos e jobs continuam sujeitos a decisão própria; a exportação não deve receber dados privados nem substituir autorização no servidor.
 
 ## Avaliação da stack sugerida
 

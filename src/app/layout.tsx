@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CoffeeMark } from "@/components/coffee-mark";
 import { Navigation } from "@/components/navigation";
 import "./globals.css";
+import { EnvironmentBanner } from "@/components/environment-banner";
 
 export const metadata: Metadata = {
   title: "Caffeine Hunters",
@@ -18,10 +19,7 @@ export default function RootLayout({
         <a className="skip-link" href="#conteudo">
           Pular para o conteúdo
         </a>
-        <div className="demo-banner">
-          <strong>Ambiente demonstrativo</strong>
-          <span>Dados fictícios · sem autenticação ou gravação</span>
-        </div>
+        <EnvironmentBanner />
         <header className="site-header">
           <div className="header-inner">
             <Link
@@ -44,7 +42,7 @@ export default function RootLayout({
         </main>
         <footer className="site-footer">
           <span>Caffeine Hunters · Feito para quem aprecia cada xícara.</span>
-          <span>Primeira interface · demonstração pública</span>
+          <span>Em desenvolvimento</span>
         </footer>
       </body>
     </html>

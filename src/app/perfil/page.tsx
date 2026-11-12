@@ -24,9 +24,9 @@ export default function ProfilePage() {
       <aside className="notice">
         <h2>Em uma próxima etapa</h2>
         <p>
-          Entrar, sair da conta, editar perfil, exportar dados e excluir conta
-          ainda não estão disponíveis. Não coletamos dados pessoais nesta
-          interface demonstrativa.
+          Este perfil é fictício. Para entrar, sair e editar seu perfil real,
+          acesse a área de Conta. Exportação e exclusão de conta ainda não
+          estão disponíveis nesta interface.
         </p>
       </aside>
     </>

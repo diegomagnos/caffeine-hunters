@@ -4,7 +4,7 @@
 
 Este é um plano proposto de entregas, sem datas ou autorização automática para implementação. As [21 decisões aprovadas](BUSINESS_RULES.md#as-21-decisões-aprovadas) definem a visão funcional; o sequenciamento não remove requisitos das fases posteriores. Cada tarefa exige escopo aprovado, branch própria e Pull Request com revisão humana. Não realizar merge automático.
 
-A consolidação documental (etapa 0) foi integrada no PR #2. Após a fundação, a tarefa atual autoriza a [primeira interface demonstrativa navegável](INITIAL_INTERFACE.md), com dados sintéticos locais, sem autenticação real, banco ou novos serviços. A publicação estática existente no Cloudflare Pages é preservada. Esta demonstração não entrega as operações de produção das etapas 2–5. O [registro técnico](TECHNICAL_FOUNDATION.md) documenta a entrega e as decisões ainda pendentes. PostgreSQL e evolução PWA permanecem planejados.
+A consolidação documental (etapa 0) foi integrada no PR #2 e a [primeira interface demonstrativa](INITIAL_INTERFACE.md) no PR #5. O escopo atual autoriza a [fundação de autenticação e perfis com Supabase Free](AUTH.md), mantendo Cloudflare Pages e a demonstração pública. A migração, SDK e interface não configuram automaticamente contas ou produção; validação real e entrega pública de e-mails permanecem condicionadas aos passos manuais documentados. As operações das etapas 2–5 e PWA continuam futuras, sem alteração das 21 decisões.
 
 ## Fundação e MVP proposto
 

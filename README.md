@@ -2,7 +2,7 @@
 
 Plataforma Web responsiva, com experiência PWA, para clubes de degustação de cafés em grãos ou moídos. Cada clube poderá reunir participantes em um grupo privado, organizar ciclos, acompanhar contribuições, avaliar cafés e consultar rankings.
 
-O projeto possui uma **primeira interface demonstrativa navegável**: painel, grupos, detalhes de grupo, ciclo, avaliação e perfil responsivos, com dados fictícios e sem autenticação ou banco conectado. Consulte o [registro da interface](docs/INITIAL_INTERFACE.md) para rotas, decisões e limitações. Este repositório continua sendo a fonte principal de conhecimento. As próximas etapas exigem autorização própria e revisão humana.
+O projeto possui uma **primeira interface demonstrativa navegável**: painel, grupos, detalhes de grupo, ciclo, avaliação e perfil responsivos, com dados fictícios. A área `/conta/` implementa autenticação e perfil real via Supabase quando configurada; veja [configuração, segurança e limitações de e-mail](docs/AUTH.md). Consulte o [registro da interface](docs/INITIAL_INTERFACE.md) para rotas, decisões e limitações. Este repositório continua sendo a fonte principal de conhecimento. As próximas etapas exigem autorização própria e revisão humana.
 
 ## Visão do produto
 
@@ -42,7 +42,7 @@ npm ci
 npm run dev
 ```
 
-Abra http://localhost:3000. Não é necessário copiar `.env.example`, criar contas ou conectar um banco. O arquivo documenta somente variáveis reservadas e vazias para integração futura. Para encerrar, use Ctrl+C.
+Abra http://localhost:3000. Não é necessário copiar `.env.example`, criar contas ou conectar um banco. Para habilitar a área de conta, siga [AUTH.md](docs/AUTH.md); sem configuração ela permanece indisponível. Para encerrar, use Ctrl+C.
 
 ## Verificação
 
@@ -66,9 +66,10 @@ O instalador de dependências do navegador pode exigir permissões administrativ
 | `npm run build:static` | Exportação estática opt-in para `out/` |
 | `npm run preview:static` | Servidor local de `out/` em http://127.0.0.1:3000 |
 | `npm run test:static` | Testes contra `out/`, sem runtime Next.js |
+| `npm run test:rls` | Migração e autorização em PostgreSQL descartável via Docker |
 | `npm run check:static` | Exportação e testes estáticos em sequência |
 
-Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de `npm test` isoladamente. São 40 testes em Chromium no build normal e 42 na exportação estática, combinando projetos desktop/móvel. Cobrem todas as telas: identificação do produto e erros de execução, navegação por teclado, ausência de overflow entre 320 e 1280 pixels e análise axe WCAG A/AA. Automação não substitui avaliação humana com leitores de tela nem testes em Safari/Firefox.
+Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de `npm test` isoladamente. Os testes em Chromium combinam projetos desktop/móvel, incluindo a área de conta e contratos simulados quando habilitados conforme [AUTH.md](docs/AUTH.md). Cobrem todas as telas: identificação do produto e erros de execução, navegação por teclado, ausência de overflow entre 320 e 1280 pixels e análise axe WCAG A/AA. Automação não substitui avaliação humana com leitores de tela nem testes em Safari/Firefox.
 
 ## Estrutura e limites
 
@@ -79,11 +80,11 @@ Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de
 - `tests/`: testes de navegador; `playwright.config.ts` controla projetos e servidor.
 - `.github/workflows/ci.yml`: verificações em PRs e na `main`, com permissões somente de leitura.
 
-As [decisões técnicas](docs/TECHNICAL_FOUNDATION.md) detalham versões, justificativas, orçamento e pendências da fundação. Não há ORM, schema, migrações, SDK Supabase ou chamadas externas em execução. A preparação de visualização estática está descrita abaixo; autenticação, acesso a dados e infraestrutura dinâmica futura exigem suas próprias entregas. PWA permanece futura.
+As [decisões técnicas](docs/TECHNICAL_FOUNDATION.md) detalham versões, justificativas, orçamento e pendências da fundação. A fundação de autenticação adiciona o SDK oficial Supabase e migração de perfis com RLS; nenhuma conta externa ou banco remoto foi configurado. A preparação de visualização estática está descrita abaixo; dados reais de grupos e infraestrutura dinâmica futura exigem suas próprias entregas. PWA permanece futura.
 
 Se o download do navegador estiver bloqueado em um ambiente que já tenha Chromium, use `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run check`; detalhes e limites no registro técnico.
 
-O CI usa runner Linux padrão gratuito em repositório público, com timeout e cancelamento de execuções obsoletas. Se a visibilidade ou as condições gratuitas mudarem, reavaliar antes de usar cotas pagas. Nenhum deploy, infraestrutura, serviço pago, cobrança automática ou credencial é configurado. Vercel Hobby e Supabase Free são apenas candidatos; o uso comercial do Hobby precisa de verificação própria antes de qualquer adoção.
+O CI usa runner Linux padrão gratuito em repositório público, com timeout e cancelamento de execuções obsoletas. Se a visibilidade ou as condições gratuitas mudarem, reavaliar antes de usar cotas pagas. Nenhum deploy, infraestrutura, serviço pago, cobrança automática ou credencial é configurado. Supabase Free é a solução aprovada de autenticação e perfis, ainda dependente de configuração manual; Vercel Hobby não foi adotado, e o uso comercial do Hobby precisa de verificação própria antes de qualquer adoção.
 
 ## Visualização estática gratuita — preparação
 
@@ -124,7 +125,7 @@ O último comando serve apenas os arquivos locais, sem publicar nada, e termina 
 | `SKIP_DEPENDENCY_INSTALL` | `1`, pois o comando executa `npm ci` com npm 11.9.0 |
 | `NEXT_TELEMETRY_DISABLED` | `1` |
 
-5. Aplique as mesmas variáveis não secretas aos ambientes **Production** e **Preview**. Nenhuma credencial ou variável de banco é necessária. Não copie `.env.example` para o painel. Não configure `NEXT_STATIC_EXPORT`: o script já o faz.
+5. Aplique as mesmas variáveis não secretas aos ambientes **Production** e **Preview**. A demonstração não exige variáveis; para contas reais, seguir a configuração pública de build em [AUTH.md](docs/AUTH.md), somente após aprovação humana. Não copiar chaves administrativas para o painel. Não configure `NEXT_STATIC_EXPORT`: o script já o faz.
 6. Em **Settings → Builds & deployments → Branch control**, confirme `main` para produção e habilite previews para branches de trabalho do próprio repositório (todas as branches não produtivas ou uma lista explícita). PRs originados de forks não recebem os mesmos previews automáticos. Depois da conexão, pushes em `main` atualizam produção e pushes nas branches habilitadas geram previews; restrinja/desative builds automáticos se cada publicação precisar de aprovação separada.
 7. Quando a publicação estiver autorizada, conclua **Save and Deploy**. Confira no log Node/npm, instalação por lockfile, `next build` com exportação e upload de `out/`. A integração GitHub/Pages fornece os links dos previews; não invente URLs antes de o projeto existir.
 8. Abra o endereço `pages.dev` e o preview em computador e celular. Confira identificação, mensagem de desenvolvimento, larguras de 320/360/768/1280 px, teclado, assets sem erros e uma URL inexistente retornando 404. Esses são passos manuais restantes, não resultados desta entrega.
@@ -137,7 +138,7 @@ Pages Free hospeda esta página sem serviço pago. Na documentação consultada,
 
 | Recurso futuro | Limite da exportação e decisão necessária |
 | --- | --- |
-| Autenticação, sessões e grupos privados | Sem cookies/sessões de servidor em execução. Exigem runtime seguro e autorização no servidor; esconder conteúdo no cliente não protege dados. |
+| Autenticação, sessões e grupos privados | Auth e perfis usam o backend Supabase e PostgreSQL/RLS conforme [AUTH.md](docs/AUTH.md). Sem sessão SSR no Pages. Grupos privados ainda exigem implementação e políticas próprias; esconder conteúdo não protege dados. |
 | Grupos, contribuições, avaliações e PostgreSQL | Sem Server Actions, APIs por requisição ou gravação em banco. Escolher hospedagem dinâmica, persistência e isolamento antes de implementar. Nunca exportar dados privados para HTML ou payloads estáticos. |
 | Encerramento automático, IA e recálculos | Sem jobs/agendador ou processamento contínuo. Exigem infraestrutura, limites, custos e segurança próprios. |
 | Rotas de entidades e conteúdo atualizado | Rotas parametrizadas devem ser conhecidas no build (`generateStaticParams`); não há ISR ou SSR por requisição. Mudanças estáticas exigem novo build. |
