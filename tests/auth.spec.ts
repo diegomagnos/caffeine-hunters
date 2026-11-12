@@ -113,6 +113,29 @@ test.describe("contratos do SDK com respostas simuladas (não validam OAuth real
   test("cadastro e recuperação retornam mensagens sem enumerar contas", async ({
     page,
   }) => {
+    // Manter o cadastro visível até liberar a navegação reproduz a corrida da CI.
+    let releaseNavigation!: () => void;
+    const recoveryNavigation = new Promise<void>((resolve) => {
+      releaseNavigation = resolve;
+    });
+    await page.route(
+      "http://127.0.0.1:3000/conta/recuperar/**",
+      async (route) => {
+        await recoveryNavigation;
+        await route.continue();
+      },
+    );
+    let releaseRecovery!: () => void;
+    const recoveryResponse = new Promise<void>((resolve) => {
+      releaseRecovery = resolve;
+    });
+    await page.route(
+      "https://auth.example.test/auth/v1/recover**",
+      async (route) => {
+        await recoveryResponse;
+        await route.fulfill({ json: {} });
+      },
+    );
     await page.goto("/conta/entrar/");
     await page.getByRole("button", { name: "Criar conta com e-mail" }).click();
     await page.getByLabel("E-mail", { exact: true }).fill("teste@example.test");
@@ -122,9 +145,49 @@ test.describe("contratos do SDK com respostas simuladas (não validam OAuth real
     await page.getByRole("button", { name: "Cadastrar", exact: true }).click();
     await expect(page.getByRole("status")).toContainText("Confira seu e-mail");
     await page.getByRole("link", { name: "Esqueci minha senha" }).click();
-    await page.getByLabel("E-mail", { exact: true }).fill("teste@example.test");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Criar conta", exact: true }),
+    ).toBeVisible();
+    releaseNavigation();
+    // O cadastro também tem E-mail: aguardar a nova rota e seu formulário
+    // antes de preencher evita escrever no campo da página que está saindo.
+    await expect(page).toHaveURL("/conta/recuperar/");
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Recuperar senha",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const email = page.getByLabel("E-mail", { exact: true });
+    await email.fill("teste@example.test");
+    await expect(email).toHaveValue("teste@example.test");
+    const requestPromise = page.waitForRequest((request) => {
+      const url = new URL(request.url());
+      return (
+        url.origin === "https://auth.example.test" &&
+        url.pathname === "/auth/v1/recover" &&
+        request.method() === "POST"
+      );
+    });
     await page.getByRole("button", { name: "Enviar recuperação" }).click();
-    await expect(page.getByRole("status")).toContainText("Se o endereço");
+    const request = await requestPromise;
+    expect(request.postDataJSON()).toMatchObject({
+      email: "teste@example.test",
+    });
+    expect(new URL(request.url()).searchParams.get("redirect_to")).toBe(
+      "http://127.0.0.1:3000/conta/callback/",
+    );
+    await expect(page.getByRole("button", { name: "Aguarde…" })).toBeDisabled();
+    await expect(page.locator("form")).toHaveAttribute("aria-busy", "true");
+    releaseRecovery();
+    await expect(page.getByRole("status")).toHaveText(
+      "Se o endereço puder receber a mensagem, enviaremos um link de recuperação. Confira também o spam.",
+    );
+    await expect(
+      page.getByRole("button", { name: "Enviar recuperação" }),
+    ).toBeEnabled();
+    await expect(page.locator("form")).toHaveAttribute("aria-busy", "false");
   });
   test("erros de credenciais e callback inválido não liberam perfil", async ({
     page,

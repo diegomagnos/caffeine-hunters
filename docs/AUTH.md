@@ -107,6 +107,24 @@ Playwright intercepta esse domínio com fixtures sintéticas. Isso testa carrega
 
 Esses resultados não comprovam OAuth, e-mail, JWT/PostgREST remoto nem publicação no Pages. A lista de validação real acima permanece pendente. Nenhum teste simulado deve ser descrito como validação real do Google.
 
+## Correção da CI do PR #6 — 12/11/2026
+
+A execução [CI #8](https://github.com/diegomagnos/caffeine-hunters/actions/runs/42878667839) terminou com 63 testes aprovados e uma falha em mobile: após clicar em Enviar recuperação, o status permaneceu vazio. O build estático foi pulado porque a suíte normal falhou. O trace foi citado no log, mas não houve upload de artefatos nessa execução; a investigação usou os logs e reprodução local controlada.
+
+A sequência original clicava em Esqueci minha senha e imediatamente preenchia um locator E-mail, presente tanto no cadastro quanto na recuperação. Um clique no Link não garante que a transição do App Router já terminou. Ao reter a resposta de navegação no Chromium mobile, foi possível reproduzir: o preenchimento ainda ocorre com o título Criar conta; depois da transição, o e-mail da recuperação está vazio, `validity.valueMissing` é verdadeiro, nenhuma requisição `/auth/v1/recover` é enviada e o status fica vazio. É uma corrida de sincronização do teste; a validação nativa do formulário e o SDK não devem ser contornados.
+
+O teste agora controla a navegação por uma promessa, confirma que a tela anterior ainda está presente, libera a resposta e aguarda tanto a URL quanto o título Recuperar senha antes de preencher. Confere o valor do campo e a requisição POST real do SDK contra a fixture, incluindo e-mail sintético e callback. A resposta simulada `{}` permanece igual e é retida por outra promessa para verificar o botão desabilitado e `aria-busy` durante o envio. Após liberá-la, exige a mensagem genérica completa e a saída do estado de carregamento. Não há sleeps, aumento de timeout, retries adicionais, remoção de testes ou relaxamento de verificações de segurança.
+
+Validação desta correção, com as mesmas variáveis sintéticas da CI e Chromium local:
+
+- Cenário corrigido com `--repeat-each=10 --workers=2`: **20 aprovados**, dez por projeto desktop/mobile, sem retries.
+- `npm run check`: lint, typecheck, build normal e **64 testes aprovados**.
+- `npm run check:static`: exportação estática e **66 testes aprovados**.
+- `npm run test:rls`: aprovado em PostgreSQL 17 descartável; os contratos de Auth permanecem simulados conforme descrito acima.
+- `git diff --check`: aprovado. As confirmações remotas de Actions e Pages são registradas no próprio PR para o SHA publicado.
+
+Código de produção, dependências, políticas RLS, arquitetura e as 21 decisões não foram alterados. As respostas simuladas continuam sem comprovar OAuth real ou entrega de e-mails. A alteração permanece na branch `feat/supabase-auth-foundation`, sem merge ou mudanças na configuração do Cloudflare.
+
 ## Referências oficiais
 
 Consultadas em 10/11/2026: [Identity linking](https://supabase.com/docs/guides/auth/auth-identity-linking), [templates](https://supabase.com/docs/guides/auth/auth-email-templates), [SMTP e restrições](https://supabase.com/docs/guides/auth/auth-smtp), [Free e cotas](https://supabase.com/pricing), [Google](https://supabase.com/docs/guides/auth/social-login/auth-google), [redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls), [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
