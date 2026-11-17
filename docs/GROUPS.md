@@ -54,3 +54,15 @@ NEXT_PUBLIC_SUPABASE_URL=https://auth.example.test NEXT_PUBLIC_SUPABASE_PUBLISHA
 - `git diff --check` e inspeção dos arquivos exportados pela ausência dos dados privados das fixtures: aprovados.
 
 Os testes novos tiveram seletores ambíguos de status/alerta e do link de grupos ajustados antes das execuções finais aprovadas. Nenhum teste de segurança foi removido ou afrouxado. Supabase remoto, Google OAuth real e publicação no Pages não foram executados nesta validação local; seguir o roteiro manual acima. Nenhuma configuração de produção ou migração remota foi alterada.
+
+## Correção da CI do PR #7 — 17/11/2026
+
+A [execução 44155507472](https://github.com/diegomagnos/caffeine-hunters/actions/runs/44155507472) falhou em `test:rls` antes das migrações, na primeira chamada ao `psql`. O `pg_isready` sem host podia responder pelo socket Unix do servidor temporário do entrypoint oficial PostgreSQL. Esse servidor é parado após a inicialização, antes da partida definitiva; a sondagem tinha uma janela de falso positivo que permitia ao `psql` encontrar o socket já removido. Lint/tipos/build/testes e exportação foram pulados por dependerem do sucesso desse passo.
+
+O runner agora usa o mesmo destino TCP `127.0.0.1`, usuário e banco explícitos em `pg_isready` e `psql`. O servidor temporário inicia com `listen_addresses=''` e não aceita TCP; a sondagem aguarda o servidor definitivo. `psql -X` evita configuração local implícita e `ON_ERROR_STOP=1` continua obrigatório. Falhas imprimem os logs do container antes da remoção e preservam o erro original. O container continua descartável, sem rede externa ou portas publicadas. Migrações, assertions SQL e RLS não foram modificadas, puladas ou repetidas para esconder falhas.
+
+O workflow mantém os comandos `test:rls`, `check` e `check:static`, sem `continue-on-error`. Após dependências/navegador instalados, `check` e `check:static` executam mesmo se um passo anterior de verificação falhar; a falha original continua reprovando o job. Builds normal e estático permanecem sequenciais para preservar `.next/`.
+
+Validação da inicialização: um experimento com `pg_sleep(3)` em script de inicialização confirmou socket pronto enquanto TCP ainda recusava conexões, seguido de TCP disponível na partida definitiva. O runner corrigido passou com essa inicialização lenta e em três novas inicializações consecutivas. Uma falha SQL induzida confirmou exit code 1, captura de logs e remoção do container; a execução normal posterior também passou. Os experimentos usam apenas fixtures descartáveis em `work/` e não alteram os testes versionados.
+
+Verificações desta correção: `npm run test:rls`, `npm run check` (lint, tipos, build normal e **76 testes**) e `npm run check:static` (exportação e **78 testes**) aprovados localmente, com as variáveis sintéticas já documentadas e Chromium do ambiente (`/usr/bin/chromium`). `git diff --check` aprovado. O resultado remoto deve ser conferido na execução do GitHub Actions associada ao commit enviado ao PR #7.
