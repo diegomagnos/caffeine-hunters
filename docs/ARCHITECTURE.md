@@ -1,8 +1,10 @@
 # Proposta de arquitetura
 
-Status: fundação técnica implementada para revisão humana conforme [registro técnico](TECHNICAL_FOUNDATION.md). Next.js/App Router, React, TypeScript estrito, Tailwind, npm e testes locais estão configurados. Os modelos e mecanismos funcionais abaixo continuam propostas futuras; autenticação e perfis mínimos foram implementados com Supabase conforme [AUTH.md](AUTH.md); acesso a dados de grupos permanece futuro.
+Evolução implementada: [autenticação](AUTH.md) e [grupos reais](GROUPS.md) usam Supabase Auth, RPC transacional e PostgreSQL/RLS, preservando o build estático. As propostas históricas abaixo não substituem essas decisões. Fundador é identidade permanente; apenas o Dono configura capacidades administrativas.
 
-A preparação de visualização gratuita usa exportação estática opt-in da interface demonstrativa, compatível com Cloudflare Pages Free conforme [procedimento e limites](../README.md#visualização-estática-gratuita--preparação). A main está publicada no Cloudflare Pages; esta entrega preserva a configuração existente e não provisiona infraestrutura. O build Next.js normal e as fronteiras do monólito são preservados. Sessão no cliente usa o SDK oficial, e autorização/persistência de perfis usam o backend Supabase/RLS. Hospedagem dinâmica, dados de grupos e jobs continuam sujeitos a decisão própria; a exportação não deve receber dados privados nem substituir autorização no servidor.
+Status: fundação técnica implementada para revisão humana conforme [registro técnico](TECHNICAL_FOUNDATION.md). Next.js/App Router, React, TypeScript estrito, Tailwind, npm e testes locais estão configurados. Os modelos e mecanismos funcionais abaixo continuam propostas futuras; autenticação e perfis mínimos foram implementados com Supabase conforme [AUTH.md](AUTH.md); criação/listagem de grupos usam a persistência descrita em [GROUPS.md](GROUPS.md).
+
+A preparação de visualização gratuita usa exportação estática opt-in da interface demonstrativa, compatível com Cloudflare Pages Free conforme [procedimento e limites](../README.md#visualização-estática-gratuita--preparação). A main está publicada no Cloudflare Pages; esta entrega preserva a configuração existente e não provisiona infraestrutura. O build Next.js normal e as fronteiras do monólito são preservados. Sessão no cliente usa o SDK oficial, e autorização/persistência de perfis usam o backend Supabase/RLS. Hospedagem dinâmica, demais operações de grupos e jobs continuam sujeitos a decisão própria; a exportação não deve receber dados privados nem substituir autorização no servidor.
 
 ## Avaliação da stack sugerida
 
@@ -57,7 +59,7 @@ Restrições relacionais e transações devem impedir referências cruzadas: con
 | Perfil | Autoridade aprovada | Limite |
 | --- | --- | --- |
 | Participante | Consultar informações permitidas; contribuir/avaliar a partir do próximo ciclo ao ingresso; editar avaliação até prazo; solicitar saída | Notas alheias e média interna apenas após avaliação própria daquela contribuição |
-| Criador | Promover outros membros a administradores; identificação original preservada | Transferência de titularidade e remoção de administradores pendentes |
+| Fundador / Dono | Fundador preservado sem privilégios vitalícios; Dono único é administrador com todas as capacidades e configura permissões | Promoção, remoção e transferência sem operações nesta etapa; ver GROUPS.md |
 | Administrador de grupo | Alterar regras para próximos ciclos, decidir obrigações na saída e autorizar/revogar médias globais | Mesmo bloqueio de visibilidade de avaliações; não recebe moderação global automaticamente |
 | Usuário autenticado | Sugerir correção no catálogo global | Não publica correção sem validação |
 | Moderador global | Validar correções de catálogo | Não ganha acesso a dados privados dos grupos |

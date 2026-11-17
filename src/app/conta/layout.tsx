@@ -15,11 +15,12 @@ export default function AccountLayout({
       <div className="notice">
         <strong>Sua conta</strong>
         <p>
-          Área separada da demonstração. Grupos, ciclos e avaliações reais ainda
-          não estão disponíveis.
+          Crie seus grupos privados e gerencie seu perfil. Ciclos e avaliações
+          reais ainda não estão disponíveis.
         </p>
         <Link href="/">Explorar demonstração pública</Link> ·{" "}
-        <Link href="/conta/perfil/">Meu perfil real</Link>
+        <Link href="/conta/perfil/">Meu perfil real</Link> ·{" "}
+        <Link href="/conta/grupos/">Meus grupos</Link>
       </div>
       {children}
     </AuthProvider>

@@ -19,13 +19,17 @@ Uma penalidade configurável por falta de contribuição pode bloquear novas ava
 
 Permanece na visão o compartilhamento público autorizado de médias e rankings dos grupos, somente com dados permitidos e sem notas individuais privadas. Seu recorte e formato ainda exigem especificação, respeitando a visibilidade da decisão 6; não se confunde com a autorização para compor agregados globais da decisão 16.
 
+## Evolução aprovada — grupos reais (17/11/2026)
+
+O escopo de [grupos reais](GROUPS.md) refina as decisões administrativas abaixo: o criador é **Fundador (Founder)** permanente e o primeiro **Dono (Owner)**. Cada grupo tem exatamente um Dono, obrigatoriamente administrador, com todas as permissões administrativas. O Fundador não recebe permissões vitalícias. Múltiplos administradores e transferência são previstos no modelo, sem operações disponíveis nesta etapa. As capacidades administrativas são configuráveis por grupo exclusivamente pelo Dono; as autoridades das decisões abaixo devem ser lidas sob essa configuração. Grupos são privados por padrão. Convites, ingresso, promoção/remoção e transferência permanecem fora desta entrega.
+
 ## As 21 decisões aprovadas
 
 ### Administração e participação
 
-**1. Múltiplos administradores:** cada grupo pode ter vários administradores. O criador poderá promover outros membros. Preservar a identificação do criador original.
+**1. Múltiplos administradores:** cada grupo pode ter vários administradores e exatamente um Dono (Owner), sempre administrador com todas as capacidades. O criador é o Fundador (Founder) permanente e o primeiro Dono; o título de Fundador não concede privilégios vitalícios. Permissões administrativas são configuráveis por grupo exclusivamente pelo Dono. Promoção, remoção e transferência terão fluxos próprios futuros, preservando o Fundador e um único Dono.
 
-**2. Alteração das regras:** qualquer administrador pode alterar as regras do grupo. Registrar autor, data e alterações. Mudanças aplicam-se aos próximos ciclos, sem alterar retroativamente ciclos encerrados.
+**2. Alteração das regras:** administradores autorizados pela configuração do Dono podem alterar as regras do grupo. Registrar autor, data e alterações. Mudanças aplicam-se aos próximos ciclos, sem alterar retroativamente ciclos encerrados.
 
 **3. Entrada de membros:** novos membros ingressam imediatamente no grupo, mas somente passam a contribuir e avaliar no próximo ciclo. Podem consultar informações e históricos do grupo conforme suas permissões.
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { GroupCard, PageIntro } from "@/components/demo-ui";
 import { groups } from "@/demo/data";
 export const metadata = { title: "Meus grupos | Caffeine Hunters" };
@@ -16,9 +17,11 @@ export default function GroupsPage() {
       <aside className="notice">
         <h2>Mais encontros, em breve</h2>
         <p>
-          Criação de grupos, convites, entrada e saída ainda não estão
-          disponíveis. Nenhum grupo real é criado nesta demonstração.
+          Nenhum grupo real é criado nesta demonstração. Para criar e consultar
+          seus grupos privados, acesse a área de conta. Convites, entrada e
+          saída ainda não estão disponíveis.
         </p>
+        <Link href="/conta/grupos/">Acessar meus grupos reais</Link>
       </aside>
     </>
   );

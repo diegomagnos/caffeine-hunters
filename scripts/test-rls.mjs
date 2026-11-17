@@ -55,9 +55,12 @@ try {
     .filter((f) => f.endsWith(".sql"))
     .sort())
     sql(readFileSync(`supabase/migrations/${file}`, "utf8"));
-  sql(readFileSync("supabase/tests/profiles.sql", "utf8"));
+  for (const file of readdirSync("supabase/tests")
+    .filter((f) => f.endsWith(".sql"))
+    .sort())
+    sql(readFileSync(`supabase/tests/${file}`, "utf8"));
   console.log(
-    "RLS: isolamento entre dois usuários, anônimo, sessão sem sub, grants e validação aprovados em PostgreSQL 17.",
+    "RLS: perfis, grupos, integridade, atomicidade, permissões e auditoria aprovados em PostgreSQL 17.",
   );
 } finally {
   try {

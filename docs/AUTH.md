@@ -10,7 +10,9 @@ O HTML/JS de todas as páginas é público. `/conta/perfil/` é uma casca estát
 
 `supabase/migrations/202611100001_profiles.sql` cria `profiles.id → auth.users.id`, nome de exibição (0–80 caracteres) e data de criação. Um trigger restrito cria um perfil vazio por usuário; usuários existentes recebem perfil no backfill. Não copia e-mail, foto ou metadados não confiáveis. RLS é habilitada e forçada: somente `authenticated` pode ler o próprio perfil e atualizar seu `display_name`. Sem insert/delete pelo cliente, sem update de id/data e sem acesso anônimo. Nenhum papel administrativo é derivado de metadados. A migração é transacional e deve ser aplicada uma única vez, em ordem, pelo responsável do banco.
 
-Rotas futuras com dados privados devem usar `RequireAuth` e módulos próprios com RLS específica; a guarda não concede autorização de grupo. Não adicionar dados privados a Server Components pré-renderizados, HTML, payloads RSC, arquivos públicos ou caches. Grupos, ciclos, avaliações e rankings continuam exclusivamente fictícios e com as 21 decisões intactas. Operações futuras que exigirem transações complexas, jobs ou segredos demandam desenho de backend próprio antes da implementação.
+Rotas futuras com dados privados devem usar `RequireAuth` e módulos próprios com RLS específica; a guarda não concede autorização de grupo. Não adicionar dados privados a Server Components pré-renderizados, HTML, payloads RSC, arquivos públicos ou caches. Na demonstração, grupos, ciclos, avaliações e rankings continuam fictícios. A evolução de grupos reais fica em `/conta/grupos/`, conforme [GROUPS.md](GROUPS.md). A criação de grupos usa RPC transacional no PostgreSQL. Jobs, segredos e outras operações futuras demandam desenho de backend próprio antes da implementação.
+
+Evolução posterior: `/conta/grupos/` usa o mesmo provider para [grupos reais](GROUPS.md). A demonstração continua separada; a criação agora usa RPC transacional com RLS, sem runtime adicional.
 
 ## Rotas
 

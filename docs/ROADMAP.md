@@ -4,7 +4,9 @@
 
 Este é um plano proposto de entregas, sem datas ou autorização automática para implementação. As [21 decisões aprovadas](BUSINESS_RULES.md#as-21-decisões-aprovadas) definem a visão funcional; o sequenciamento não remove requisitos das fases posteriores. Cada tarefa exige escopo aprovado, branch própria e Pull Request com revisão humana. Não realizar merge automático.
 
-A consolidação documental (etapa 0) foi integrada no PR #2 e a [primeira interface demonstrativa](INITIAL_INTERFACE.md) no PR #5. O escopo atual autoriza a [fundação de autenticação e perfis com Supabase Free](AUTH.md), mantendo Cloudflare Pages e a demonstração pública. A migração, SDK e interface não configuram automaticamente contas ou produção; validação real e entrega pública de e-mails permanecem condicionadas aos passos manuais documentados. As operações das etapas 2–5 e PWA continuam futuras, sem alteração das 21 decisões.
+A consolidação documental (etapa 0) foi integrada no PR #2 e a [primeira interface demonstrativa](INITIAL_INTERFACE.md) no PR #5. O escopo atual autoriza a [fundação de autenticação e perfis com Supabase Free](AUTH.md), mantendo Cloudflare Pages e a demonstração pública. A migração, SDK e interface não configuram automaticamente contas ou produção; validação real e entrega pública de e-mails permanecem condicionadas aos passos manuais documentados. Além do recorte de grupos descrito abaixo, as demais operações das etapas 2–5 e PWA continuam futuras. O refinamento de Fundador/Dono e permissões está registrado nas regras de negócio.
+
+A primeira parte da etapa 2 implementa [criação e listagem de grupos reais](GROUPS.md), com Fundador/Dono, permissões preparadas, RLS e auditoria. Entrada de membros, gestão de administradores e transferência ficam para entregas posteriores; não bloqueiam este recorte aprovado.
 
 ## Fundação e MVP proposto
 
