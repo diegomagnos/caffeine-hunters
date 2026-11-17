@@ -10,22 +10,24 @@ Após a fundação, a [interface demonstrativa](INITIAL_INTERFACE.md) apresenta 
 
 | Área | Comportamento | Decisões |
 | --- | --- | --- |
-| Administração e participação | Grupos privados com vários administradores e criador original preservado; qualquer administrador altera regras para próximos ciclos com auditoria; novos membros participam ativamente a partir do próximo ciclo; saída não depende de quitação, com decisão administrativa justificada sobre pendências | 1–4 |
+| Administração e participação | Grupos privados com vários administradores, Fundador permanente e Dono único; administradores autorizados alteram regras para próximos ciclos com auditoria; novos membros participam ativamente a partir do próximo ciclo; saída não depende de quitação, com decisão administrativa justificada sobre pendências | 1–4 |
 | Avaliações | Aroma, sabor, acidez, corpo e finalização; nota geral direta de 1 a 5 estrelas; avaliações dos colegas e média do café somente após avaliação própria, inclusive para administradores; edição auditada até encerramento automático; avaliação do próprio café permitida; ausência registrada sem zero nem penalidade automática | 5–10 |
 | Contribuições e catálogo | Cada contribuição é independente, privada e contextual; Produto é compartilhado; busca inicial no catálogo, cadastro obrigatório de nome/marca/quantidade e enriquecimento opcional assistido por IA com revisão humana; vínculos exatos verificáveis automáticos, duvidosos confirmados; correções colaborativas validadas por moderação global | 11–15 |
 | Publicação e rankings | Autorização por administradores do grupo, desativada por padrão e reversível; média global aritmética com peso igual por avaliação válida autorizada; degustações repetidas contam; ranking usa ajuste bayesiano com `m` dinâmico; exibe média real, contagem e pontuação separadas; prevê filtros, categorias, popularidade e mais avaliados | 16–21 |
 
 Permanecem confirmadas a configuração de frequência, quantidade mínima, prazo de entrega, inadimplência e penalidades por grupo; uma contribuição por membro elegível por ciclo; preservação de avaliações anteriores e regras históricas. Contribuição mensal de 250g continua sendo sugestão inicial configurável. Penalidade por falta de contribuição pode bloquear novas avaliações até regularização conforme a política aplicável; não se confunde com ausência de avaliação.
 
+A evolução aprovada de [grupos reais](GROUPS.md) distingue Fundador permanente de Dono único, sempre administrador, e reserva ao Dono a configuração das permissões administrativas. Esse refinamento governa as referências administrativas anteriores abaixo. Apenas criação/listagem estão disponíveis; ingresso e gestão de papéis continuam futuros.
+
 ## Perfis e limites aprovados
 
-Participantes consultam informações autorizadas do grupo, contribuem e avaliam conforme elegibilidade. O criador pode promover membros a administradores. Administradores do grupo alteram regras, decidem sobre obrigações na saída e autorizam/revogam participação nas médias globais; não recebem exceção à visibilidade das avaliações.
+Participantes consultam informações autorizadas do grupo, contribuem e avaliam conforme elegibilidade. O Fundador não tem permissões vitalícias; promoção de administradores terá operação própria futura. Administradores do grupo alteram regras, decidem sobre obrigações na saída e autorizam/revogam participação nas médias globais; não recebem exceção à visibilidade das avaliações.
 
 Qualquer usuário autenticado pode sugerir correções no catálogo. Moderadores globais têm perfil específico para validar essas correções, independente da administração dos grupos. Administradores da plataforma gerenciam os moderadores. Essa função de moderação não concede acesso automático aos grupos privados. Permissões restantes não devem ser presumidas.
 
 ## MVP e evolução — planejamento proposto
 
-Priorizar fundação e autenticação, grupos privados e permissões, ciclos, contribuições com cadastro manual e avaliações com médias internas e encerramento automático. A entrada terá seu mecanismo definido antes da entrega de grupos; a regra aprovada de participação apenas no próximo ciclo permanece válida qualquer que seja esse mecanismo.
+Priorizar fundação e autenticação, grupos privados e permissões, ciclos, contribuições com cadastro manual e avaliações com médias internas e encerramento automático. A entrada terá seu mecanismo definido antes de implementar ingresso de novos membros; a regra aprovada de participação apenas no próximo ciclo permanece válida qualquer que seja esse mecanismo.
 
 Planejar depois catálogo compartilhado e vinculação, assistência por IA com leitura de embalagem e pesquisa externa, moderação global, médias publicadas por autorização e rankings estatísticos completos. O cadastro manual inicial mantém nome e marca contextuais e quantidade na contribuição; a busca global passa a iniciar o fluxo quando a fase de catálogo estiver disponível. Isso é sequenciamento de entrega, preservando a decisão 12 na visão completa.
 

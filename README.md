@@ -2,7 +2,9 @@
 
 Plataforma Web responsiva, com experiência PWA, para clubes de degustação de cafés em grãos ou moídos. Cada clube poderá reunir participantes em um grupo privado, organizar ciclos, acompanhar contribuições, avaliar cafés e consultar rankings.
 
-O projeto possui uma **primeira interface demonstrativa navegável**: painel, grupos, detalhes de grupo, ciclo, avaliação e perfil responsivos, com dados fictícios. A área `/conta/` implementa autenticação e perfil real via Supabase quando configurada; veja [configuração, segurança e limitações de e-mail](docs/AUTH.md). Consulte o [registro da interface](docs/INITIAL_INTERFACE.md) para rotas, decisões e limitações. Este repositório continua sendo a fonte principal de conhecimento. As próximas etapas exigem autorização própria e revisão humana.
+O projeto possui uma **primeira interface demonstrativa navegável**: painel, grupos, detalhes de grupo, ciclo, avaliação e perfil responsivos, com dados fictícios. A área `/conta/` implementa autenticação, perfil e criação/listagem de grupos reais via Supabase quando configurada; veja [configuração, segurança e limitações de e-mail](docs/AUTH.md). Consulte o [registro da interface](docs/INITIAL_INTERFACE.md) para rotas, decisões e limitações. Este repositório continua sendo a fonte principal de conhecimento. As próximas etapas exigem autorização própria e revisão humana.
+
+A implementação de grupos, migração necessária e roteiro de teste estão em [Grupos reais](docs/GROUPS.md).
 
 ## Visão do produto
 
@@ -80,7 +82,7 @@ Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de
 - `tests/`: testes de navegador; `playwright.config.ts` controla projetos e servidor.
 - `.github/workflows/ci.yml`: verificações em PRs e na `main`, com permissões somente de leitura.
 
-As [decisões técnicas](docs/TECHNICAL_FOUNDATION.md) detalham versões, justificativas, orçamento e pendências da fundação. A fundação de autenticação adiciona o SDK oficial Supabase e migração de perfis com RLS; nenhuma conta externa ou banco remoto foi configurado. A preparação de visualização estática está descrita abaixo; dados reais de grupos e infraestrutura dinâmica futura exigem suas próprias entregas. PWA permanece futura.
+As [decisões técnicas](docs/TECHNICAL_FOUNDATION.md) detalham versões, justificativas, orçamento e pendências da fundação. A fundação de autenticação adiciona o SDK oficial Supabase e migração de perfis com RLS; nenhuma conta externa ou banco remoto foi configurado. A preparação de visualização estática está descrita abaixo; grupos reais usam RPC transacional e RLS conforme [GROUPS.md](docs/GROUPS.md). Outras operações e infraestrutura dinâmica futura exigem suas próprias entregas. PWA permanece futura.
 
 Se o download do navegador estiver bloqueado em um ambiente que já tenha Chromium, use `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run check`; detalhes e limites no registro técnico.
 
