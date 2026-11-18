@@ -2,6 +2,8 @@
 // Não testa JWT, PostgREST, OAuth nem a configuração de um projeto Supabase remoto.
 import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
+const referenceOnly = process.argv.includes("--baseline-reference");
+const testReconciliation = process.argv.includes("--with-reconciliation");
 const name = `caffeine-rls-${process.pid}`;
 // O servidor temporário do entrypoint só abre socket Unix e depois reinicia.
 // TCP no loopback do container só fica disponível no servidor definitivo.
@@ -48,23 +50,42 @@ try {
       input,
     );
   }
-  sql(`create role anon nologin; create role authenticated nologin;
-    create schema auth; create table auth.users(id uuid primary key);
-    create function auth.uid() returns uuid language sql stable as
-    $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-    grant usage on schema auth to anon, authenticated;
-    grant execute on function auth.uid() to anon, authenticated;`);
-  for (const file of readdirSync("supabase/migrations")
-    .filter((f) => f.endsWith(".sql"))
-    .sort())
-    sql(readFileSync(`supabase/migrations/${file}`, "utf8"));
-  for (const file of readdirSync("supabase/tests")
-    .filter((f) => f.endsWith(".sql"))
-    .sort())
-    sql(readFileSync(`supabase/tests/${file}`, "utf8"));
-  console.log(
-    "RLS: perfis, grupos, integridade, atomicidade, permissões e auditoria aprovados em PostgreSQL 17.",
-  );
+  sql(readFileSync("scripts/supabase-test-fixture.sql", "utf8"));
+  const migrations = readdirSync("supabase/migrations")
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
+  if (referenceOnly || testReconciliation) {
+    const [profiles, groups] = migrations;
+    if (profiles !== "202611100001_profiles.sql" || groups !== "202611170001_groups.sql")
+      throw new Error("As migrações de referência devem iniciar a sequência local.");
+    sql("INSERT INTO auth.users VALUES ('00000000-0000-0000-0000-000000000001');");
+    for (const file of migrations.splice(0, 2))
+      sql(readFileSync(`supabase/migrations/${file}`, "utf8"));
+
+    if (referenceOnly) {
+      process.stdout.write(docker(
+        ["exec", "-i", name, "psql", ...connection, "-XAtqw", "-v", "ON_ERROR_STOP=1"],
+        readFileSync("scripts/supabase-baseline.sql", "utf8"),
+      ));
+    } else {
+      const result = spawnSync("python3", ["-B", "scripts/test-supabase-reconciliation.py", name], {
+        stdio: "inherit",
+      });
+      if (result.status !== 0)
+        throw new Error(result.error?.message || "Falha no teste de reconciliação Supabase.");
+    }
+  }
+  if (!referenceOnly) {
+    for (const file of migrations)
+      sql(readFileSync(`supabase/migrations/${file}`, "utf8"));
+    for (const file of readdirSync("supabase/tests")
+      .filter((f) => f.endsWith(".sql"))
+      .sort())
+      sql(readFileSync(`supabase/tests/${file}`, "utf8"));
+    console.log(
+      "RLS: perfis, grupos, integridade, atomicidade, permissões e auditoria aprovados em PostgreSQL 17.",
+    );
+  }
 } catch (error) {
   // Container descartável com fixtures: preservar diagnóstico antes da remoção.
   try {

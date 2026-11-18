@@ -36,8 +36,11 @@ jobs:
         id: dependencies
       - run: npx playwright install --with-deps chromium
         id: browser
-      - name: PostgreSQL migrations and RLS
-        run: npm run test:rls
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1
+        with:
+          version: 2.54.11
+      - name: PostgreSQL migrations, RLS and baseline reconciliation
+        run: npm run test:rls -- --with-reconciliation
       # Executar também se RLS falhar, sem converter falhas em sucesso.
       # Builds normal/estático continuam sequenciais porque compartilham .next/.
       - name: Lint, types, production build and browser tests
