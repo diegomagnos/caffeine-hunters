@@ -81,6 +81,7 @@ Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de
 - `src/lib/server/`: fronteira documentada para persistência futura PostgreSQL/Supabase.
 - `tests/`: testes de navegador; `playwright.config.ts` controla projetos e servidor.
 - `.github/workflows/ci.yml`: verificações em PRs e na `main`, com permissões somente de leitura.
+- [Migrações Supabase em produção](docs/SUPABASE_MIGRATIONS.md) descreve a configuração, a reconciliação inicial e o workflow manual com aprovação.
 
 As [decisões técnicas](docs/TECHNICAL_FOUNDATION.md) detalham versões, justificativas, orçamento e pendências da fundação. A fundação de autenticação adiciona o SDK oficial Supabase e migração de perfis com RLS; nenhuma conta externa ou banco remoto foi configurado. A preparação de visualização estática está descrita abaixo; grupos reais usam RPC transacional e RLS conforme [GROUPS.md](docs/GROUPS.md). Outras operações e infraestrutura dinâmica futura exigem suas próprias entregas. PWA permanece futura.
 
