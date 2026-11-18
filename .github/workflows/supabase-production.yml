@@ -2,6 +2,14 @@ name: Supabase production migrations
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Operação em produção
+        type: choice
+        default: deploy
+        options:
+          - deploy
+          - reconcile
 
 permissions:
   contents: read
@@ -24,10 +32,19 @@ jobs:
       - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1
         with:
           version: 2.54.11
-      - name: Verify history and apply pending migrations
+      - name: Build baseline reference in disposable PostgreSQL
+        if: inputs.operation == 'reconcile'
+        run: node scripts/test-rls.mjs --baseline-reference > "$RUNNER_TEMP/caffeine-baseline.json"
+      - name: Verify and run selected operation
         env:
+          OPERATION: ${{ inputs.operation }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           PGSSLMODE: verify-full
           PGSSLROOTCERT: /etc/ssl/certs/ca-certificates.crt
           PGCONNECT_TIMEOUT: "10"
-        run: python3 -u scripts/deploy-supabase-migrations.py
+        run: |
+          case "$OPERATION" in
+            deploy) python3 -u scripts/deploy-supabase-migrations.py ;;
+            reconcile) python3 -u scripts/deploy-supabase-migrations.py --reconcile "$RUNNER_TEMP/caffeine-baseline.json" ;;
+            *) exit 1 ;;
+          esac
