@@ -10,7 +10,7 @@ WITH app_tables AS (
     WHERE relnamespace = 'public'::regnamespace
       AND relname IN ('profiles', 'groups', 'group_members', 'group_admin_permissions', 'group_audit_events')
 ), app_functions AS (
-    SELECT p.*, n.nspname
+    SELECT p.*, p.oid::regprocedure::text AS signature, n.nspname
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE (n.nspname = 'public' AND p.proname IN ('create_user_profile', 'create_group'))
@@ -32,6 +32,7 @@ WITH app_tables AS (
     FROM pg_namespace WHERE nspname = 'private'
 )
 SELECT jsonb_build_object(
+    'versão principal do PostgreSQL', current_setting('server_version_num')::integer / 10000,
     'tabelas e RLS', (
         SELECT jsonb_agg(jsonb_build_array(relname, relkind, relrowsecurity, relforcerowsecurity,
             pg_get_userbyid(relowner), relpersistence, relispartition) ORDER BY relname)
@@ -62,8 +63,12 @@ SELECT jsonb_build_object(
         FROM pg_policies WHERE schemaname = 'public' AND tablename IN (SELECT relname FROM app_tables)
     ),
     'funções e proprietários', (
-        SELECT jsonb_agg(jsonb_build_array(pg_get_functiondef(oid), pg_get_userbyid(proowner))
-            ORDER BY nspname, proname, oid::regprocedure::text COLLATE "C")
+        SELECT jsonb_agg(jsonb_build_object(
+            'signature', signature, 'routine', nspname || '.' || proname,
+            'definition', CASE WHEN prokind <> 'a' THEN pg_get_functiondef(oid) END,
+            'body', prosrc, 'owner', pg_get_userbyid(proowner),
+            'security_definer', prosecdef, 'settings', proconfig
+        ) ORDER BY signature COLLATE "C")
         FROM app_functions
     ),
     'triggers', (

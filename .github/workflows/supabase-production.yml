@@ -10,6 +10,7 @@ on:
         options:
           - deploy
           - reconcile
+          - inspect
 
 permissions:
   contents: read
@@ -30,10 +31,11 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
       - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1
+        if: inputs.operation != 'inspect'
         with:
           version: 2.54.11
       - name: Build baseline reference in disposable PostgreSQL
-        if: inputs.operation == 'reconcile'
+        if: inputs.operation == 'reconcile' || inputs.operation == 'inspect'
         run: node scripts/test-rls.mjs --baseline-reference > "$RUNNER_TEMP/caffeine-baseline.json"
       - name: Verify and run selected operation
         env:
@@ -60,5 +62,6 @@ jobs:
           case "$OPERATION" in
             deploy) python3 -u scripts/deploy-supabase-migrations.py ;;
             reconcile) python3 -u scripts/deploy-supabase-migrations.py --reconcile "$RUNNER_TEMP/caffeine-baseline.json" ;;
+            inspect) python3 -u scripts/deploy-supabase-migrations.py --inspect "$RUNNER_TEMP/caffeine-baseline.json" ;;
             *) exit 1 ;;
           esac

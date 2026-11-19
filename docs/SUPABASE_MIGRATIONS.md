@@ -27,6 +27,16 @@ A CLI **2.54.11** cria `supabase_migrations.schema_migrations` quando ela estive
 
 Para reproduzir o teste local da CI, use Docker, Python 3, OpenSSL e Supabase CLI 2.54.11 no PATH e execute `npm run test:rls -- --with-reconciliation`. O teste usa PostgreSQL descartável e verifica a conexão TLS com uma CA de teste.
 
+### Se aparecerem divergências em permissões, funções ou proprietários
+
+Com este diagnóstico em `main`, execute **Actions → Supabase production migrations → Run workflow → main → inspect** e aprove em **Review deployments → production**. A inspeção usa as mesmas consultas somente leitura da reconciliação e informa quais assinaturas, proprietários e grants diferem. Ela termina com erro se encontrar divergências e não chama a CLI de migrações. Se a base já estiver registrada, a inspeção informa esse estado sem comparar com uma referência anterior às possíveis migrações subsequentes.
+
+- **Permissões.** A comparação usa as ACLs das cinco tabelas da aplicação, de suas colunas com grants, das funções examinadas e do schema `private`. O log indica privilégios ausentes ou adicionais, proprietário, concedente, beneficiário e opção de repasse. A ordem das entradas da ACL é irrelevante. A referência reproduz os grants padrão de `public` usados na fixture, incluindo `service_role`. A versão principal do PostgreSQL e as configurações do projeto podem explicar diferenças. Por exemplo, o PostgreSQL 17 acrescentou o privilégio de tabela `MAINTAIN`. Mesmo um grant plausível do ambiente exige revisão. [Inicialização do PostgreSQL no Supabase](https://github.com/supabase/postgres/blob/develop/migrations/db/init-scripts/00000000000000-initial-schema.sql) · [PostgreSQL 17](https://www.postgresql.org/docs/17/release-17.html)
+- **Funções e proprietários.** O log caracteriza diferenças de corpo, configuração, `SECURITY DEFINER`, declaração, proprietário e assinaturas. A referência instala as migrações como `postgres`. Uma instalação por outro papel pode explicar um proprietário diferente. A troca é relevante para funções `SECURITY DEFINER`, que executam com os privilégios do proprietário. O deparser do PostgreSQL e a formatação de origem também podem mudar o texto comparado. Revise a definição em um canal restrito antes de considerar equivalência.
+- **Escopo.** A consulta examina as funções com nomes das duas migrações, incluindo sobrecargas, e verifica o trigger da aplicação em `auth.users`, além do backfill. Funções gerenciadas como `auth.uid()` e ACLs dos schemas de Auth e Storage ficam fora da comparação. Nomes de papéis não padronizados, corpos SQL, configurações completas e valores do banco ficam fora dos logs.
+
+Use o relatório para confirmar a causa antes de executar `reconcile` novamente. A inspeção e o reparo continuam bloqueando diferenças de grants, proprietários e definições. O relatório anterior que listava apenas as seções não identifica quais objetos divergiram.
+
 ### Se a leitura inicial falhar
 
 O log mostra uma categoria fixa para a falha e omite a saída bruta do PostgreSQL. A ausência do schema `supabase_migrations` ou da tabela `schema_migrations` é um estado esperado para a reconciliação inicial. O workflow ainda exige a comparação completa com a referência antes de registrar versões.

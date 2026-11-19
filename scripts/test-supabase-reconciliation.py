@@ -1,6 +1,8 @@
 """Exercise the production reconciliation against the isolated RLS fixture."""
 
 from importlib.util import module_from_spec, spec_from_file_location
+from contextlib import redirect_stdout
+from io import StringIO
 import os
 from pathlib import Path
 import shutil
@@ -23,10 +25,11 @@ READER_URL = DIAGNOSTICS_URL.replace("postgres@", "history_reader@")
 REFUSED_URL = URL.replace(":5432/", ":1/")
 TLS_URL = URL.replace("sslmode=disable", "sslmode=require")
 INVALID_URL = URL + "&synthetic_private_option=synthetic_private_value"
+INSPECT_URL = URL.replace("sslmode=disable", "application_name=inspection_fixture")
 VERIFIED_URL = "postgresql://postgres@localhost:5432/postgres"
 MISMATCHED_URL = VERIFIED_URL.replace("@localhost", "@127.0.0.1")
 TLS_TARGETS = {VERIFIED_URL, MISMATCHED_URL}
-FIXTURE_URLS = {URL, DIAGNOSTICS_URL, READER_URL, REFUSED_URL, TLS_URL, INVALID_URL} | TLS_TARGETS
+FIXTURE_URLS = {URL, DIAGNOSTICS_URL, READER_URL, REFUSED_URL, TLS_URL, INVALID_URL, INSPECT_URL} | TLS_TARGETS
 
 
 def docker(*args, **kwargs):
@@ -155,9 +158,55 @@ with TemporaryDirectory() as directory:
     def reconcile():
         deployment.reconcile(URL, local, reference)
 
+    def inspect():
+        args = ["deploy-supabase-migrations.py", "--inspect", str(reference)]
+        with patch.object(sys, "argv", args), patch.dict(os.environ, SUPABASE_DB_URL=INSPECT_URL):
+            deployment.main()
+
+    def check_report(action, *labels, hidden=()):
+        output = StringIO()
+        with redirect_stdout(output), patch.object(deployment, "run_cli") as cli:
+            blocked(action, "Reconciliação bloqueada")
+            cli.assert_not_called()
+        report = output.getvalue()
+        assert all(label in report for label in labels), report
+        assert all(value not in report for value in hidden), report
+        assert deployment.remote_history(URL) == ("schema_absent", [])
+
     assert deployment.remote_history(URL) == ("schema_absent", [])
     blocked(lambda: deployment.deploy(URL, local), "Histórico inicial divergente")
     assert deployment.remote_history(URL) == ("schema_absent", [])
+
+    # Supabase-managed objects outside the application's scope stay out of the comparison.
+    sql("CREATE FUNCTION auth.managed_fixture() RETURNS int LANGUAGE sql AS 'SELECT 1'")
+    sql("GRANT EXECUTE ON FUNCTION auth.managed_fixture() TO service_role")
+    with patch.object(deployment, "run_cli") as cli:
+        inspect()
+        cli.assert_not_called()
+    assert deployment.remote_history(URL) == ("schema_absent", [])
+
+    # PostgreSQL 17 adds MAINTAIN to table ALL. An ACL variation is evidence, not an exemption.
+    sql("REVOKE MAINTAIN ON public.profiles FROM service_role")
+    check_report(inspect, "ACL ausente em profiles: MAINTAIN", "beneficiário service_role")
+    sql("GRANT MAINTAIN ON public.profiles TO service_role")
+
+    versioned_function = sql("SELECT pg_get_functiondef('private.is_group_member(uuid)'::regprocedure)")
+    sql("CREATE ROLE synthetic_private_owner")
+    sql("ALTER FUNCTION private.is_group_member(uuid) OWNER TO synthetic_private_owner")
+    check_report(reconcile, "proprietário esperado postgres, encontrado outro papel",
+                 hidden=("synthetic_private_owner",))
+    sql("ALTER FUNCTION private.is_group_member(uuid) OWNER TO postgres")
+    sql("""
+        CREATE OR REPLACE FUNCTION private.is_group_member(target_group_id uuid) RETURNS boolean
+        LANGUAGE sql STABLE SECURITY INVOKER SET search_path = synthetic_private_schema AS
+        $$ SELECT true /* synthetic_private_body */ $$
+    """)
+    check_report(inspect, "is_group_member(uuid): diferença em corpo SQL, SECURITY DEFINER, configuração",
+                 hidden=("synthetic_private_schema", "synthetic_private_body"))
+    sql(versioned_function)
+    sql("CREATE FUNCTION public.create_group(integer) RETURNS int LANGUAGE sql AS 'SELECT 1'")
+    check_report(reconcile, "Função public.create_group: 1 assinatura(s) adicional(is).")
+    sql("DROP FUNCTION public.create_group(integer)")
 
     # An installed object with a different definition must block repair.
     sql("ALTER POLICY profiles_read_own ON public.profiles USING (false)")
@@ -166,7 +215,7 @@ with TemporaryDirectory() as directory:
     sql("ALTER POLICY profiles_read_own ON public.profiles USING ((SELECT auth.uid()) = id)")
 
     sql("GRANT SELECT ON public.group_audit_events TO authenticated")
-    blocked(reconcile, "permissões")
+    check_report(reconcile, "ACL adicional em group_audit_events: SELECT", "beneficiário authenticated")
     assert deployment.remote_history(URL) == ("schema_absent", [])
     sql("REVOKE SELECT ON public.group_audit_events FROM authenticated")
 
