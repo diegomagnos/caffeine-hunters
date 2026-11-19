@@ -26,6 +26,16 @@ A CLI **2.54.11** cria `supabase_migrations.schema_migrations` quando ela estive
 
 Para reproduzir o teste local da CI, use Docker, Python 3 e Supabase CLI 2.54.11 no PATH e execute `npm run test:rls -- --with-reconciliation`. O teste começa com a aplicação instalada e sem tabela de histórico.
 
+### Se a leitura inicial falhar
+
+O log mostra uma categoria fixa para a falha e omite a saída bruta do PostgreSQL. A ausência do schema `supabase_migrations` ou da tabela `schema_migrations` é um estado esperado para a reconciliação inicial. O workflow ainda exige a comparação completa com a referência antes de registrar versões.
+
+- Para erro de formato, DNS, conexão ou autenticação, confira no painel do Supabase o projeto, a URI do **Session pooler**, a porta `5432`, o percent-encoding da senha e as restrições de rede. Atualize `SUPABASE_DB_URL` no GitHub Environment somente se precisar corrigir a URI.
+- Para erro de TLS, confira o nome do servidor e a cadeia de certificados. Mantenha `verify-full`.
+- Para erro de permissão ou de consulta, confirme o papel usado e examine o histórico e a estrutura do banco em modo somente leitura antes de prosseguir. Uma falha de leitura interrompe a execução.
+
+Quando a correção estiver em `main`, inicie uma **nova execução** com **Run workflow → main → reconcile** e aprove manualmente em `production`. **Re-run jobs** usa o commit original da execução anterior. [Sobre reexecuções do GitHub Actions](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)
+
 ## Próximas migrações
 
 1. Adicione um arquivo SQL com versão única e posterior às existentes, usando o timestamp de 14 dígitos gerado por `supabase migration new nome_da_migracao`. Preserve os arquivos já aplicados. Teste com `npm run test:rls` e em ambiente descartável ou de teste. Prefira o controle transacional da CLI para alterações compatíveis e revise qualquer migração que precise de controle próprio de transação.

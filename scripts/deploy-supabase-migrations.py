@@ -10,6 +10,32 @@ import subprocess
 MIGRATIONS = Path("supabase/migrations")
 FILENAME = re.compile(r"([0-9]{12}|[0-9]{14})_[a-z0-9_]+\.sql")
 BASELINE = ("202611100001_profiles.sql", "202611170001_groups.sql")
+HISTORY_ABSENCES = {
+    "schema_absent": "Schema supabase_migrations ausente.",
+    "table_absent": "Tabela schema_migrations ausente no schema supabase_migrations.",
+}
+
+# Only fixed messages reach the logs. libpq's English diagnostics can contain
+# connection parameters, credentials, hostnames or arbitrary server messages.
+CONNECTION_ERRORS = (
+    (("could not translate host name", "name or service not known"),
+     "DNS do PostgreSQL. Confira o host do Session pooler."),
+    (("certificate verify failed", "root certificate file", "server certificate for",
+      "ssl error", "ssl was required", "ssl handshake", "tls handshake", "ssl negotiation", "invalid sslmode"),
+     "TLS do PostgreSQL. Confira o nome do servidor e as CAs usadas com verify-full."),
+    (("authentication failed", "no password supplied", "tenant or user not found",
+      "no pg_hba.conf entry", "is not permitted to log in"),
+     "autenticação ou acesso ao PostgreSQL. Confira projeto, usuário, senha e restrições de acesso."),
+    (("invalid connection option", "invalid uri", "missing key/value", "invalid integer value"),
+     "formato da conexão PostgreSQL. Confira a URI e o percent-encoding no secret."),
+)
+SQL_ERRORS = {
+    "42501": "permissão insuficiente para a consulta.",
+    "3F000": "schema necessário à consulta indisponível.",
+    "42P01": "relação necessária à consulta indisponível.",
+    "42703": "coluna esperada pela consulta ausente.",
+    "57014": "consulta cancelada ou limite de tempo excedido.",
+}
 
 
 def local_versions():
@@ -28,37 +54,80 @@ def local_versions():
     return versions
 
 
+def psql_failure(result):
+    if result.returncode == 2:
+        stderr = result.stderr.lower()
+        for fragments, message in CONNECTION_ERRORS:
+            if any(fragment in stderr for fragment in fragments):
+                return message
+        return "conexão PostgreSQL indisponível ou interrompida. Confira host, porta e rede."
+    if result.returncode == 3:
+        match = re.search(r"\bERROR:\s+([0-9A-Z]{5}):", result.stderr)
+        return SQL_ERRORS.get(match[1] if match else None, "consulta recusada pelo PostgreSQL.")
+    return "erro no cliente psql."
+
+
 def read_json(db_url, query, description):
     result = subprocess.run(
-        ["psql", "-XAtqw", "-v", "ON_ERROR_STOP=1", "-d", db_url],
-        input=query, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+        ["psql", "-XAtqw", "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=verbose", "-d", db_url],
+        input=query, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        encoding="utf-8", errors="replace",
+        env={**os.environ, "LC_ALL": "C", "PGCLIENTENCODING": "UTF8"},
     )
     if result.returncode != 0:
-        raise SystemExit(f"Falha na leitura de {description}. Verifique acesso, TLS e schema.")
+        raise SystemExit(f"Falha na leitura de {description}: {psql_failure(result)}")
     try:
         return json.loads(result.stdout)
     except ValueError:
         raise SystemExit(f"Resposta inesperada na leitura de {description}.") from None
 
 
-def remote_versions(db_url):
-    # Read the raw ledger, including unexpected values that a CLI table can omit.
+def remote_history(db_url):
+    # Read the catalogs and ledger from the same read-only snapshot. A SQL
+    # error or a relation of another kind must never become an empty history.
     query = r"""
         BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
+        SET LOCAL search_path = pg_catalog;
+        SET LOCAL row_security = off;
         SET LOCAL statement_timeout = '30s';
-        SELECT to_regclass('supabase_migrations.schema_migrations') IS NOT NULL AS has_history \gset
+        SELECT state, state = 'table_present' AS has_history
+        FROM (
+            SELECT CASE
+                WHEN n.oid IS NULL THEN 'schema_absent'
+                WHEN NOT has_schema_privilege(n.oid, 'USAGE') THEN 'schema_denied'
+                WHEN c.oid IS NULL THEN 'table_absent'
+                WHEN c.relkind <> 'r' OR c.relpersistence <> 'p' THEN 'invalid_table'
+                ELSE 'table_present'
+            END AS state
+            FROM (VALUES ('supabase_migrations', 'schema_migrations')) AS expected(schema_name, table_name)
+            LEFT JOIN pg_namespace n ON n.nspname = expected.schema_name
+            LEFT JOIN pg_class c ON c.relnamespace = n.oid AND c.relname = expected.table_name
+        ) AS history \gset
         \if :has_history
-        SELECT coalesce(json_agg(version ORDER BY version COLLATE "C"), '[]'::json)
+        SELECT json_build_object(
+            'state', :'state', 'versions', coalesce(json_agg(version ORDER BY version COLLATE "C"), '[]'::json)
+        )
         FROM supabase_migrations.schema_migrations;
         \else
-        SELECT 'null'::json;
+        SELECT json_build_object('state', :'state', 'versions', '[]'::json);
         \endif
         COMMIT;
     """
-    versions = read_json(db_url, query, "histórico remoto")
-    if versions is not None and not isinstance(versions, list):
+    history = read_json(db_url, query, "histórico remoto")
+    if not isinstance(history, dict):
         raise SystemExit("Resposta inesperada ao ler o histórico remoto.")
-    return versions
+    state, versions = history.get("state"), history.get("versions")
+    if not isinstance(state, str) or not isinstance(versions, list):
+        raise SystemExit("Resposta inesperada ao ler o histórico remoto.")
+    if state == "schema_denied":
+        raise SystemExit("Falha na leitura de histórico remoto: sem permissão USAGE no schema supabase_migrations.")
+    if state == "invalid_table":
+        raise SystemExit("Falha na leitura de histórico remoto: schema_migrations deve ser uma tabela permanente.")
+    if state in HISTORY_ABSENCES and versions == []:
+        return state, versions
+    if state == "table_present" and all(isinstance(version, str) for version in versions):
+        return state, versions
+    raise SystemExit("Resposta inesperada ao ler o histórico remoto.")
 
 
 def run_cli(db_url, *args):
@@ -72,8 +141,9 @@ def run_cli(db_url, *args):
 
 def reconcile(db_url, local, reference_path):
     baseline = local[:len(BASELINE)]
-    remote = remote_versions(db_url)
-    recorded = remote if remote is not None else []
+    state, recorded = remote_history(db_url)
+    if state in HISTORY_ABSENCES:
+        print(HISTORY_ABSENCES[state])
     if recorded != local[:len(recorded)]:
         raise SystemExit("Histórico remoto divergente da sequência local. Reconciliação bloqueada.")
     pending = baseline[len(recorded):]
@@ -96,19 +166,21 @@ def reconcile(db_url, local, reference_path):
         raise SystemExit("Reconciliação bloqueada. Divergências em: " + ", ".join(differences))
     print("Definições do banco e backfill de perfis conferidos.")
 
-    if remote_versions(db_url) != remote:
+    if remote_history(db_url) != (state, recorded):
         raise SystemExit("Histórico alterado durante a verificação. Reconciliação bloqueada.")
     print("Registrando no histórico:", ", ".join(pending))
     if not run_cli(db_url, "migration", "repair", "--status", "applied", *pending):
         raise SystemExit("O reparo falhou. Verifique o estado antes de disparar outra execução.")
-    if remote_versions(db_url) != baseline:
+    if remote_history(db_url) != ("table_present", baseline):
         raise SystemExit("O histórico após o reparo diverge do esperado.")
     print("Histórico inicial verificado:", ", ".join(baseline))
 
 
 def deploy(db_url, local):
-    remote = remote_versions(db_url)
-    if remote is None or remote[:len(BASELINE)] != local[:len(BASELINE)]:
+    state, remote = remote_history(db_url)
+    if state in HISTORY_ABSENCES:
+        print(HISTORY_ABSENCES[state])
+    if remote[:len(BASELINE)] != local[:len(BASELINE)]:
         raise SystemExit("Histórico inicial divergente. Consulte docs/SUPABASE_MIGRATIONS.md.")
     if remote != local[:len(remote)]:
         raise SystemExit("Histórico remoto divergente da sequência local. Implantação bloqueada.")
@@ -121,11 +193,11 @@ def deploy(db_url, local):
     print("Versões pendentes:", ", ".join(pending))
     if not run_cli(db_url, "db", "push", "--dry-run"):
         raise SystemExit("A simulação da Supabase CLI falhou. Implantação bloqueada.")
-    if remote_versions(db_url) != remote:
+    if remote_history(db_url) != (state, remote):
         raise SystemExit("Histórico alterado durante a simulação. Implantação bloqueada.")
     if not run_cli(db_url, "db", "push", "--yes"):
         raise SystemExit("A aplicação falhou. Verifique o histórico e o schema antes de repetir.")
-    if remote_versions(db_url) != local:
+    if remote_history(db_url) != ("table_present", local):
         raise SystemExit("O histórico após a aplicação diverge da sequência esperada.")
 
     print("Histórico final verificado. Versões aplicadas:", ", ".join(pending))
