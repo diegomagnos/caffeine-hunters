@@ -11,6 +11,10 @@ on:
           - deploy
           - reconcile
           - inspect
+      accept_reduced_service_role_acl:
+        description: Aceitar perfil revisado de ACL reduzida de service_role
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -40,6 +44,7 @@ jobs:
       - name: Verify and run selected operation
         env:
           OPERATION: ${{ inputs.operation }}
+          ACCEPT_REDUCED_SERVICE_ROLE_ACL: ${{ inputs.accept_reduced_service_role_acl }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           SUPABASE_DB_SSL_ROOT_CERT: ${{ secrets.SUPABASE_DB_SSL_ROOT_CERT }}
           PGSSLMODE: verify-full
@@ -59,9 +64,13 @@ jobs:
             exit 1
           fi
           export PGSSLROOTCERT
+          acl_flags=()
+          if [[ "$ACCEPT_REDUCED_SERVICE_ROLE_ACL" == true ]]; then
+            acl_flags+=(--accept-reduced-service-role-acl)
+          fi
           case "$OPERATION" in
-            deploy) python3 -u scripts/deploy-supabase-migrations.py ;;
-            reconcile) python3 -u scripts/deploy-supabase-migrations.py --reconcile "$RUNNER_TEMP/caffeine-baseline.json" ;;
-            inspect) python3 -u scripts/deploy-supabase-migrations.py --inspect "$RUNNER_TEMP/caffeine-baseline.json" ;;
+            deploy) python3 -u scripts/deploy-supabase-migrations.py "${acl_flags[@]}" ;;
+            reconcile) python3 -u scripts/deploy-supabase-migrations.py --reconcile "$RUNNER_TEMP/caffeine-baseline.json" "${acl_flags[@]}" ;;
+            inspect) python3 -u scripts/deploy-supabase-migrations.py --inspect "$RUNNER_TEMP/caffeine-baseline.json" "${acl_flags[@]}" ;;
             *) exit 1 ;;
           esac

@@ -3,6 +3,7 @@
 from importlib.util import module_from_spec, spec_from_file_location
 from contextlib import redirect_stdout
 from io import StringIO
+import json
 import os
 from pathlib import Path
 import shutil
@@ -18,6 +19,7 @@ deployment = module_from_spec(SPEC)
 SPEC.loader.exec_module(deployment)
 
 CONTAINER = sys.argv[1]
+INSPECTION_ONLY = "--inspection-only" in sys.argv[2:]
 DOCKER = ["docker", "--host=unix:///var/run/docker.sock"]
 URL = "postgresql://postgres@127.0.0.1:5432/postgres?sslmode=disable"
 DIAGNOSTICS_URL = URL.replace("/postgres?", "/history_diagnostics?")
@@ -106,13 +108,14 @@ def install_tls_fixture(directory):
     raise AssertionError("O PostgreSQL descartável não ativou TLS.")
 
 
-cli = shutil.which("supabase")
-assert cli, "Instale Supabase CLI 2.54.11 para executar este teste."
 docker("exec", CONTAINER, "mkdir", "-p", "/tmp/caffeine/supabase")
-docker("cp", cli, f"{CONTAINER}:/usr/local/bin/supabase")
-docker("cp", "supabase/migrations", f"{CONTAINER}:/tmp/caffeine/supabase")
-version = docker("exec", CONTAINER, "supabase", "--version", capture_output=True, text=True)
-assert version.stdout.strip() == "2.54.11", version.stdout
+if not INSPECTION_ONLY:
+    cli = shutil.which("supabase")
+    assert cli, "Instale Supabase CLI 2.54.11 para executar este teste."
+    docker("cp", cli, f"{CONTAINER}:/usr/local/bin/supabase")
+    docker("cp", "supabase/migrations", f"{CONTAINER}:/tmp/caffeine/supabase")
+    version = docker("exec", CONTAINER, "supabase", "--version", capture_output=True, text=True)
+    assert version.stdout.strip() == "2.54.11", version.stdout
 
 deployment.subprocess = SimpleNamespace(
     run=run_in_fixture, PIPE=subprocess.PIPE, DEVNULL=subprocess.DEVNULL,
@@ -158,8 +161,10 @@ with TemporaryDirectory() as directory:
     def reconcile():
         deployment.reconcile(URL, local, reference)
 
-    def inspect():
+    def inspect(*, accept=False):
         args = ["deploy-supabase-migrations.py", "--inspect", str(reference)]
+        if accept:
+            args.append("--accept-reduced-service-role-acl")
         with patch.object(sys, "argv", args), patch.dict(os.environ, SUPABASE_DB_URL=INSPECT_URL):
             deployment.main()
 
@@ -174,7 +179,8 @@ with TemporaryDirectory() as directory:
         assert deployment.remote_history(URL) == ("schema_absent", [])
 
     assert deployment.remote_history(URL) == ("schema_absent", [])
-    blocked(lambda: deployment.deploy(URL, local), "Histórico inicial divergente")
+    if not INSPECTION_ONLY:
+        blocked(lambda: deployment.deploy(URL, local), "Histórico inicial divergente")
     assert deployment.remote_history(URL) == ("schema_absent", [])
 
     # Supabase-managed objects outside the application's scope stay out of the comparison.
@@ -193,7 +199,7 @@ with TemporaryDirectory() as directory:
     versioned_function = sql("SELECT pg_get_functiondef('private.is_group_member(uuid)'::regprocedure)")
     sql("CREATE ROLE synthetic_private_owner")
     sql("ALTER FUNCTION private.is_group_member(uuid) OWNER TO synthetic_private_owner")
-    check_report(reconcile, "proprietário esperado postgres, encontrado outro papel",
+    check_report(inspect, "proprietário esperado postgres, encontrado outro papel",
                  hidden=("synthetic_private_owner",))
     sql("ALTER FUNCTION private.is_group_member(uuid) OWNER TO postgres")
     sql("""
@@ -205,24 +211,81 @@ with TemporaryDirectory() as directory:
                  hidden=("synthetic_private_schema", "synthetic_private_body"))
     sql(versioned_function)
     sql("CREATE FUNCTION public.create_group(integer) RETURNS int LANGUAGE sql AS 'SELECT 1'")
-    check_report(reconcile, "Função public.create_group: 1 assinatura(s) adicional(is).")
+    check_report(inspect, "Função public.create_group: 1 assinatura(s) adicional(is).")
     sql("DROP FUNCTION public.create_group(integer)")
 
     # An installed object with a different definition must block repair.
     sql("ALTER POLICY profiles_read_own ON public.profiles USING (false)")
-    blocked(reconcile, "políticas")
+    blocked(inspect, "políticas")
     assert deployment.remote_history(URL) == ("schema_absent", [])
     sql("ALTER POLICY profiles_read_own ON public.profiles USING ((SELECT auth.uid()) = id)")
 
     sql("GRANT SELECT ON public.group_audit_events TO authenticated")
-    check_report(reconcile, "ACL adicional em group_audit_events: SELECT", "beneficiário authenticated")
+    check_report(inspect, "ACL adicional em group_audit_events: SELECT", "beneficiário authenticated")
     assert deployment.remote_history(URL) == ("schema_absent", [])
     sql("REVOKE SELECT ON public.group_audit_events FROM authenticated")
 
     sql("DELETE FROM public.profiles")
-    blocked(reconcile, "backfill de perfis")
+    blocked(inspect, "backfill de perfis")
     assert deployment.remote_history(URL) == ("schema_absent", [])
     sql("INSERT INTO public.profiles (id, display_name) SELECT id, 'Perfil de teste' FROM auth.users")
+
+    # Reproduce both categories in inspect #4, keeping the fixture disposable.
+    functions = json.loads(reference.read_text(encoding="utf-8"))["funções e proprietários"]
+    for item in functions:
+        definition = item["definition"].replace(item["body"], item["body"].replace("\n", "\r\n"), 1)
+        sql(definition)
+    installed = deployment.read_json(URL, Path("scripts/supabase-baseline.sql").read_text(), "fixture")
+    assert all("\r\n" in item["body"] for item in installed["funções e proprietários"])
+
+    table_objects = "public.profiles, public.groups, public.group_members, public.group_admin_permissions, public.group_audit_events"
+    function_objects = "public.create_group(text,text), public.create_user_profile()"
+    table_privileges = "SELECT, INSERT, UPDATE, DELETE"
+    sql(f"REVOKE {table_privileges} ON {table_objects} FROM service_role")
+    sql(f"REVOKE EXECUTE ON FUNCTION {function_objects} FROM service_role")
+    def accept():
+        inspect(accept=True)
+
+    check_report(accept, "sem correspondência com os defaults atuais")
+    sql(f"ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE {table_privileges} ON TABLES FROM service_role")
+    sql("ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM service_role")
+    check_report(inspect, "O perfil reduzido exige revisão e aceite explícito.")
+    output = StringIO()
+    with redirect_stdout(output), patch.object(deployment, "run_cli") as cli:
+        accept()
+        cli.assert_not_called()
+    assert output.getvalue().count("corpo equivalente com fim de linha CRLF/LF") == len(functions)
+    assert "Perfil reduzido de service_role aceito" in output.getvalue()
+    assert deployment.remote_history(URL) == ("schema_absent", [])
+
+    sql("GRANT SELECT ON public.group_audit_events TO authenticated")
+    check_report(accept, "ACL adicional em group_audit_events: SELECT")
+    sql("REVOKE SELECT ON public.group_audit_events FROM authenticated")
+    sql("REVOKE MAINTAIN ON public.profiles FROM service_role")
+    check_report(accept, "ACL ausente em profiles:", "MAINTAIN")
+    sql("GRANT MAINTAIN ON public.profiles TO service_role")
+    sql("ALTER FUNCTION private.is_group_member(uuid) SECURITY INVOKER")
+    check_report(accept, "SECURITY DEFINER.")
+    sql("ALTER FUNCTION private.is_group_member(uuid) SECURITY DEFINER")
+    sql(versioned_function.replace("target_group_id and", "target_group_id or"))
+    check_report(accept, "diferença em corpo SQL")
+    sql(versioned_function)
+
+    # CRLF inside a literal can change data or policy behavior.
+    for body in ("SELECT 'line\nline'", 'SELECT "line\nline"', "SELECT $$line\nline$$",
+                 "SELECT E'line\\n'\n", "SELECT 1 /* comment\n */"):
+        remote = body.replace("\n", "\r\n")
+        assert not deployment.equivalent_function_line_endings(
+            {"body": body, "definition": f"AS $body${body}$body$"},
+            {"body": remote, "definition": f"AS $body${remote}$body$"},
+        )
+
+    if INSPECTION_ONLY:
+        print("Inspeção de ACL e funções aprovada em PostgreSQL descartável.")
+        sys.exit(0)
+
+    sql(f"GRANT {table_privileges} ON {table_objects} TO service_role")
+    sql(f"GRANT EXECUTE ON FUNCTION {function_objects} TO service_role")
 
     def profile():
         return sql("SELECT tableoid, id, display_name, created_at FROM public.profiles")
