@@ -8,14 +8,15 @@ O workflow **Supabase production migrations** é acionado manualmente pela aba *
 2. Em **Settings → Environments → production**, mantenha `diegomagnos` em **Required reviewers**, **Prevent self-review** desativado, bypass administrativo desativado e apenas `main` em **Deployment branches and tags**. Nesta fase de desenvolvimento, o proprietário pode aprovar manualmente uma execução que ele mesmo iniciou. Essa configuração oferece menos independência do que exigir aprovação de uma segunda pessoa. As regras de revisão e merge de PR em `main` são separadas da aprovação de deploy.
 3. No Dashboard do Supabase, abra o projeto de produção e confira o identificador do projeto. Em **Connect**, copie a URI do **Session pooler** (porta `5432`, compatível com IPv4). Substitua o marcador pela senha do banco, aplicando *percent-encoding* aos caracteres especiais da senha, sem codificar a URI inteira. Use o usuário e o host exibidos pelo painel. Confirme que as restrições de rede permitem o runner e que a conexão funciona com TLS e verificação de nome do servidor.
 4. Ao configurar um environment novo, com o workflow já em `main` e antes de cadastrar o secret, dispare uma execução para confirmar que o job fica aguardando a aprovação manual de `diegomagnos`. Cancele a execução enquanto ela aguarda aprovação. Se a proteção estiver indisponível ou incompleta, suspenda a implantação e deixe o secret sem cadastro.
-5. Cadastre a URI como **Environment secret** `SUPABASE_DB_URL` somente em `production`. O fluxo usa a conexão PostgreSQL com privilégios de migração e TLS `verify-full`. Preserve a senha para esse fim em GitHub Secrets e mantenha a URI fora do Git, das variáveis públicas e dos logs. A conexão direta ao banco dispensa token da API de gerenciamento e chaves da aplicação.
-6. Conclua a reconciliação abaixo com autorização explícita antes de aprovar a primeira implantação.
+5. Cadastre a URI como **Environment secret** `SUPABASE_DB_URL` somente em `production`. Use o hostname do **Session pooler** exibido no painel e mantenha as opções de TLS no workflow. Remova da URI parâmetros como `sslmode=require` e `sslrootcert`. Preserve a URI e a senha em GitHub Secrets.
+6. No Supabase, abra **Database Settings → SSL Configuration → Download Certificate**. No GitHub, em **Settings → Environments → production → Environment secrets**, crie `SUPABASE_DB_SSL_ROOT_CERT` e cole todo o conteúdo PEM baixado, incluindo as linhas `BEGIN CERTIFICATE` e `END CERTIFICATE`. O workflow usa essa CA e `verify-full` com `psql` e com a Supabase CLI. A validação exige cadeia confiável e hostname correspondente. [Configuração TLS do Supabase](https://supabase.com/docs/guides/platform/ssl-enforcement#a-note-about-postgres-ssl-modes)
+7. Conclua a reconciliação abaixo com autorização explícita antes de aprovar a primeira implantação.
 
 ## Reconciliação única de perfis e grupos
 
 Todo o procedimento pode ser feito no navegador, inclusive no Windows.
 
-1. Com o workflow atualizado em `main`, confira as proteções de **production** descritas na configuração inicial. O secret `SUPABASE_DB_URL` já está cadastrado. Se a aprovação manual obrigatória ou outra proteção estiver indisponível, suspenda a execução.
+1. Com o workflow atualizado em `main`, confira as proteções de **production**, a URI do Session pooler em `SUPABASE_DB_URL` e a CA do Supabase em `SUPABASE_DB_SSL_ROOT_CERT`. Se a aprovação manual obrigatória ou outra proteção estiver indisponível, suspenda a execução.
 2. Combine uma janela sem outras operações de migração. Confirme o projeto Supabase associado ao secret e revise os registros da aplicação manual de [perfis](../supabase/migrations/202611100001_profiles.sql) e [grupos](../supabase/migrations/202611170001_groups.sql). Confira a configuração de acesso do projeto, incluindo os papéis dos clientes e se `private` fica fora dos schemas expostos pela API.
 3. Em **Actions → Supabase production migrations → Run workflow**, escolha `main` e a operação **reconcile**. `diegomagnos` confere o commit, o projeto e a evidência de aplicação manual antes de aprovar em **Review deployments → production**, inclusive se tiver iniciado a execução.
 4. Aguarde **Histórico inicial verificado** ou **Histórico inicial já registrado** no log. Se houver divergência ou falha, revise a seção indicada e o estado do banco antes de repetir. Se um reparo anterior registrou só perfis, uma nova execução pode completar grupos após conferir novamente as definições.
@@ -24,14 +25,14 @@ O workflow compara definições, proprietários, permissões, RLS, políticas, f
 
 A CLI **2.54.11** cria `supabase_migrations.schema_migrations` quando ela estiver ausente. O modo **reconcile** usa `migration repair --status applied` com apenas as versões iniciais faltantes, `202611100001` e `202611170001`, e confere o histórico resultante. O SQL dessas migrações só roda na referência descartável. A reconciliação não inicia o deploy de migrações novas. [Código do reparo na CLI 2.54.11](https://github.com/supabase/cli/blob/v2.54.11/internal/migration/repair/repair.go)
 
-Para reproduzir o teste local da CI, use Docker, Python 3 e Supabase CLI 2.54.11 no PATH e execute `npm run test:rls -- --with-reconciliation`. O teste começa com a aplicação instalada e sem tabela de histórico.
+Para reproduzir o teste local da CI, use Docker, Python 3, OpenSSL e Supabase CLI 2.54.11 no PATH e execute `npm run test:rls -- --with-reconciliation`. O teste usa PostgreSQL descartável e verifica a conexão TLS com uma CA de teste.
 
 ### Se a leitura inicial falhar
 
 O log mostra uma categoria fixa para a falha e omite a saída bruta do PostgreSQL. A ausência do schema `supabase_migrations` ou da tabela `schema_migrations` é um estado esperado para a reconciliação inicial. O workflow ainda exige a comparação completa com a referência antes de registrar versões.
 
 - Para erro de formato, DNS, conexão ou autenticação, confira no painel do Supabase o projeto, a URI do **Session pooler**, a porta `5432`, o percent-encoding da senha e as restrições de rede. Atualize `SUPABASE_DB_URL` no GitHub Environment somente se precisar corrigir a URI.
-- Para erro de TLS, confira o nome do servidor e a cadeia de certificados. Mantenha `verify-full`.
+- Para erro de cadeia TLS, confira se `SUPABASE_DB_SSL_ROOT_CERT` contém a CA vigente baixada do painel. Para erro de hostname, confira se a URI usa o DNS do Session pooler exibido em **Connect**. Mantenha `verify-full` e as configurações TLS do Supabase.
 - Para erro de permissão ou de consulta, confirme o papel usado e examine o histórico e a estrutura do banco em modo somente leitura antes de prosseguir. Uma falha de leitura interrompe a execução.
 
 Quando a correção estiver em `main`, inicie uma **nova execução** com **Run workflow → main → reconcile** e aprove manualmente em `production`. **Re-run jobs** usa o commit original da execução anterior. [Sobre reexecuções do GitHub Actions](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)
