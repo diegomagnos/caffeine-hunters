@@ -33,6 +33,12 @@ WITH app_tables AS (
 )
 SELECT jsonb_build_object(
     'versão principal do PostgreSQL', current_setting('server_version_num')::integer / 10000,
+    'defaults de service_role em public', (
+        SELECT coalesce(jsonb_agg(jsonb_build_array(defaclobjtype, privilege_type, is_grantable)), '[]'::jsonb)
+        FROM pg_default_acl CROSS JOIN LATERAL aclexplode(defaclacl)
+        WHERE defaclrole = 'postgres'::regrole AND defaclnamespace = 'public'::regnamespace
+          AND defaclobjtype IN ('r', 'f') AND grantee = 'service_role'::regrole
+    ),
     'tabelas e RLS', (
         SELECT jsonb_agg(jsonb_build_array(relname, relkind, relrowsecurity, relforcerowsecurity,
             pg_get_userbyid(relowner), relpersistence, relispartition) ORDER BY relname)

@@ -3,7 +3,8 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 const referenceOnly = process.argv.includes("--baseline-reference");
-const testReconciliation = process.argv.includes("--with-reconciliation");
+const inspectionOnly = process.argv.includes("--with-baseline-inspection");
+const testReconciliation = inspectionOnly || process.argv.includes("--with-reconciliation");
 const name = `caffeine-rls-${process.pid}`;
 // O servidor temporário do entrypoint só abre socket Unix e depois reinicia.
 // TCP no loopback do container só fica disponível no servidor definitivo.
@@ -68,7 +69,9 @@ try {
         readFileSync("scripts/supabase-baseline.sql", "utf8"),
       ));
     } else {
-      const result = spawnSync("python3", ["-B", "scripts/test-supabase-reconciliation.py", name], {
+      const testArgs = ["-B", "scripts/test-supabase-reconciliation.py", name];
+      if (inspectionOnly) testArgs.push("--inspection-only");
+      const result = spawnSync("python3", testArgs, {
         stdio: "inherit",
       });
       if (result.status !== 0)

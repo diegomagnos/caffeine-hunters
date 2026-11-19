@@ -23,6 +23,19 @@ PRIVILEGES = {
     "SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER", "MAINTAIN",
     "EXECUTE", "USAGE", "CREATE",
 }
+# Exact ACL delta observed in inspect #4, scoped to the two baseline migrations.
+REDUCED_SERVICE_ROLE_ACL = Counter(
+    (kind, name, "postgres", "postgres", "service_role", privilege, False)
+    for kind, names, privileges in (
+        ("table", ("group_admin_permissions", "group_audit_events", "group_members", "groups", "profiles"),
+         ("SELECT", "INSERT", "UPDATE", "DELETE")),
+        ("function", ("public.create_group(text,text)", "public.create_user_profile()"), ("EXECUTE",)),
+    )
+    for name in names for privilege in privileges
+)
+REDUCED_SERVICE_ROLE_DEFAULTS = Counter(
+    ("r", privilege, False) for privilege in ("TRUNCATE", "REFERENCES", "TRIGGER", "MAINTAIN")
+)
 
 # Only fixed messages reach the logs. libpq's English diagnostics can contain
 # connection parameters, credentials, hostnames or arbitrary server messages.
@@ -175,6 +188,34 @@ def visible_role(role):
     return role if role in PLATFORM_ROLES else "outro papel"
 
 
+def equivalent_function_line_endings(expected, actual):
+    body = expected["body"]
+    remote_body = actual["body"]
+    if not body or remote_body == body or remote_body.replace("\r\n", "\n") != body:
+        return False
+    # Only normalize when we can establish that line endings are outside SQL
+    # tokens. Reject escaped strings, multiline quotes, comments and dollar quotes.
+    if any(marker in body for marker in ("\\", '"', "$", "--", "/*", "*/")):
+        return False
+    if "'" in re.sub(r"'(?:[^'\r\n]|'')*'", "", body):
+        return False
+    before = (expected["definition"] or "").split(body)
+    after = (actual["definition"] or "").split(remote_body)
+    return len(before) == 2 and before == after
+
+
+def compare_function_line_endings(expected, actual):
+    before = {item["signature"]: item for item in expected or ()}
+    result = []
+    for item in actual or ():
+        versioned = before.get(item["signature"])
+        if versioned and equivalent_function_line_endings(versioned, item):
+            print(f"Função {versioned['signature']}: corpo equivalente com fim de linha CRLF/LF.")
+            item = item | {"body": versioned["body"], "definition": versioned["definition"]}
+        result.append(item)
+    return result if actual is not None else None
+
+
 def report_function_differences(expected, actual):
     before = {item["signature"]: item for item in expected or ()}
     after = {item["signature"]: item for item in actual or ()}
@@ -220,7 +261,7 @@ def report_permission_differences(expected, actual, reference):
                   f"proprietário {owner}, concedente {grantor}, beneficiário {grantee}, {option}.")
 
 
-def check_reconciliation(db_url, local, reference_path):
+def check_reconciliation(db_url, local, reference_path, *, accept_reduced_service_role_acl=False):
     state, recorded = remote_history(db_url)
     if state in HISTORY_ABSENCES:
         print(HISTORY_ABSENCES[state])
@@ -245,25 +286,48 @@ def check_reconciliation(db_url, local, reference_path):
     versions = reference.pop(version_key), installed.pop(version_key)
     if all(type(version) is int for version in versions):
         print(f"PostgreSQL principal: referência {versions[0]}, remoto {versions[1]}.")
+    defaults_key = "defaults de service_role em public"
+    reference.pop(defaults_key)
+    installed_defaults = Counter(map(tuple, installed.pop(defaults_key)))
     expected_acl = Counter(map(tuple, reference["permissões"] or ()))
     actual_acl = Counter(map(tuple, installed["permissões"] or ()))
+    function_key = "funções e proprietários"
+    installed[function_key] = compare_function_line_endings(reference[function_key], installed[function_key])
     differences = [
         section for section in reference
         if section != "permissões" and reference[section] != installed[section]
     ]
     if expected_acl != actual_acl:
-        differences.append("permissões")
-        report_permission_differences(expected_acl, actual_acl, reference)
-    if "funções e proprietários" in differences:
-        report_function_differences(reference["funções e proprietários"], installed["funções e proprietários"])
+        reduced_pattern = (
+            versions == (17, 17)
+            and expected_acl - actual_acl == REDUCED_SERVICE_ROLE_ACL
+            and not actual_acl - expected_acl
+        )
+        matched = reduced_pattern and installed_defaults == REDUCED_SERVICE_ROLE_DEFAULTS
+        if reduced_pattern:
+            if matched:
+                print("ACL reduzida de service_role confirmada pelos defaults atuais de postgres em public.")
+            else:
+                print("ACL reduzida de service_role sem correspondência com os defaults atuais de postgres em public.")
+        if matched and accept_reduced_service_role_acl:
+            print("Perfil reduzido de service_role aceito por autorização explícita. Nenhum grant será alterado.")
+        else:
+            differences.append("permissões")
+            report_permission_differences(expected_acl, actual_acl, reference)
+            if matched:
+                print("O perfil reduzido exige revisão e aceite explícito.")
+    if function_key in differences:
+        report_function_differences(reference[function_key], installed[function_key])
     if differences:
         raise SystemExit("Reconciliação bloqueada. Divergências em: " + ", ".join(differences))
     print("Definições do banco e backfill de perfis conferidos.")
     return state, recorded, pending
 
 
-def reconcile(db_url, local, reference_path):
-    state, recorded, pending = check_reconciliation(db_url, local, reference_path)
+def reconcile(db_url, local, reference_path, *, accept_reduced_service_role_acl=False):
+    state, recorded, pending = check_reconciliation(
+        db_url, local, reference_path, accept_reduced_service_role_acl=accept_reduced_service_role_acl,
+    )
     if not pending:
         return
     if remote_history(db_url) != (state, recorded):
@@ -309,7 +373,10 @@ def main():
     operation = parser.add_mutually_exclusive_group()
     operation.add_argument("--reconcile", type=Path, metavar="REFERENCE")
     operation.add_argument("--inspect", type=Path, metavar="REFERENCE")
+    parser.add_argument("--accept-reduced-service-role-acl", action="store_true")
     args = parser.parse_args()
+    if args.accept_reduced_service_role_acl and not (args.inspect or args.reconcile):
+        parser.error("O aceite da ACL reduzida só se aplica a inspect ou reconcile.")
     db_url = os.environ.get("SUPABASE_DB_URL")
     if not db_url:
         raise SystemExit("Configure SUPABASE_DB_URL no environment production.")
@@ -317,10 +384,14 @@ def main():
 
     local = local_versions()
     if args.inspect:
-        check_reconciliation(db_url, local, args.inspect)
+        check_reconciliation(
+            db_url, local, args.inspect, accept_reduced_service_role_acl=args.accept_reduced_service_role_acl,
+        )
         print("Inspeção somente leitura concluída.")
     elif args.reconcile:
-        reconcile(db_url, local, args.reconcile)
+        reconcile(
+            db_url, local, args.reconcile, accept_reduced_service_role_acl=args.accept_reduced_service_role_acl,
+        )
     else:
         deploy(db_url, local)
 
