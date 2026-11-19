@@ -1,6 +1,7 @@
 """Reconcile the baseline or apply migrations after the verified history."""
 
 import argparse
+from collections import Counter, defaultdict
 import json
 import os
 from pathlib import Path
@@ -14,6 +15,13 @@ BASELINE = ("202611100001_profiles.sql", "202611170001_groups.sql")
 HISTORY_ABSENCES = {
     "schema_absent": "Schema supabase_migrations ausente.",
     "table_absent": "Tabela schema_migrations ausente no schema supabase_migrations.",
+}
+PLATFORM_ROLES = {
+    "postgres", "PUBLIC", "anon", "authenticated", "service_role", "supabase_admin", "supabase_auth_admin",
+}
+PRIVILEGES = {
+    "SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER", "MAINTAIN",
+    "EXECUTE", "USAGE", "CREATE",
 }
 
 # Only fixed messages reach the logs. libpq's English diagnostics can contain
@@ -163,17 +171,65 @@ def run_cli(db_url, *args):
     return result.returncode == 0
 
 
-def reconcile(db_url, local, reference_path):
-    baseline = local[:len(BASELINE)]
+def visible_role(role):
+    return role if role in PLATFORM_ROLES else "outro papel"
+
+
+def report_function_differences(expected, actual):
+    before = {item["signature"]: item for item in expected or ()}
+    after = {item["signature"]: item for item in actual or ()}
+    known_names = {item["routine"] for item in before.values()}
+    for signature, item in before.items():
+        current = after.get(signature)
+        if current is None:
+            print(f"Função {signature}: assinatura esperada ausente.")
+            continue
+        if item["owner"] != current["owner"]:
+            print(f"Função {signature}: proprietário esperado {visible_role(item['owner'])}, "
+                  f"encontrado {visible_role(current['owner'])}.")
+        fields = [
+            label for key, label in (
+                ("body", "corpo SQL"),
+                ("security_definer", "SECURITY DEFINER"),
+                ("settings", "configuração da função"),
+            ) if item[key] != current[key]
+        ]
+        if item["definition"] != current["definition"] and not fields:
+            fields.append("declaração ou atributos")
+        if fields:
+            print(f"Função {signature}: diferença em " + ", ".join(fields) + ".")
+    for name in sorted(known_names):
+        count = sum(item["routine"] == name for signature, item in after.items() if signature not in before)
+        if count:
+            print(f"Função {name}: {count} assinatura(s) adicional(is).")
+
+
+def report_permission_differences(expected, actual, reference):
+    known_objects = {(kind, name) for kind, name, *_ in expected}
+    known_objects.update(("column", f"{row[0]}.{row[1]}") for row in reference["colunas e defaults"] or ())
+    for delta, label in ((expected - actual, "ausente"), (actual - expected, "adicional")):
+        groups = defaultdict(list)
+        for (kind, name, owner, grantor, grantee, privilege, grantable), count in sorted(delta.items()):
+            object_label = name if (kind, name) in known_objects else "objeto extra"
+            privilege_label = privilege if privilege in PRIVILEGES else "outro privilégio"
+            group = (object_label, visible_role(owner), visible_role(grantor), visible_role(grantee), grantable)
+            groups[group].extend([privilege_label] * count)
+        for (name, owner, grantor, grantee, grantable), privileges in groups.items():
+            option = "com repasse" if grantable else "sem repasse"
+            print(f"ACL {label} em {name}: {', '.join(sorted(set(privileges)))}; "
+                  f"proprietário {owner}, concedente {grantor}, beneficiário {grantee}, {option}.")
+
+
+def check_reconciliation(db_url, local, reference_path):
     state, recorded = remote_history(db_url)
     if state in HISTORY_ABSENCES:
         print(HISTORY_ABSENCES[state])
     if recorded != local[:len(recorded)]:
         raise SystemExit("Histórico remoto divergente da sequência local. Reconciliação bloqueada.")
-    pending = baseline[len(recorded):]
+    pending = local[len(recorded):len(BASELINE)]
     if not pending:
         print("Histórico inicial já registrado. Nenhuma alteração necessária.")
-        return
+        return state, recorded, pending
 
     try:
         reference = json.loads(reference_path.read_text(encoding="utf-8"))
@@ -185,16 +241,37 @@ def reconcile(db_url, local, reference_path):
     installed = read_json(db_url, query, "definições e backfill em produção")
     if not isinstance(installed, dict) or installed.keys() != reference.keys():
         raise SystemExit("Resposta inesperada na comparação. Reconciliação bloqueada.")
-    differences = [section for section in reference if reference[section] != installed[section]]
+    version_key = "versão principal do PostgreSQL"
+    versions = reference.pop(version_key), installed.pop(version_key)
+    if all(type(version) is int for version in versions):
+        print(f"PostgreSQL principal: referência {versions[0]}, remoto {versions[1]}.")
+    expected_acl = Counter(map(tuple, reference["permissões"] or ()))
+    actual_acl = Counter(map(tuple, installed["permissões"] or ()))
+    differences = [
+        section for section in reference
+        if section != "permissões" and reference[section] != installed[section]
+    ]
+    if expected_acl != actual_acl:
+        differences.append("permissões")
+        report_permission_differences(expected_acl, actual_acl, reference)
+    if "funções e proprietários" in differences:
+        report_function_differences(reference["funções e proprietários"], installed["funções e proprietários"])
     if differences:
         raise SystemExit("Reconciliação bloqueada. Divergências em: " + ", ".join(differences))
     print("Definições do banco e backfill de perfis conferidos.")
+    return state, recorded, pending
 
+
+def reconcile(db_url, local, reference_path):
+    state, recorded, pending = check_reconciliation(db_url, local, reference_path)
+    if not pending:
+        return
     if remote_history(db_url) != (state, recorded):
         raise SystemExit("Histórico alterado durante a verificação. Reconciliação bloqueada.")
     print("Registrando no histórico:", ", ".join(pending))
     if not run_cli(db_url, "migration", "repair", "--status", "applied", *pending):
         raise SystemExit("O reparo falhou. Verifique o estado antes de disparar outra execução.")
+    baseline = local[:len(BASELINE)]
     if remote_history(db_url) != ("table_present", baseline):
         raise SystemExit("O histórico após o reparo diverge do esperado.")
     print("Histórico inicial verificado:", ", ".join(baseline))
@@ -229,7 +306,9 @@ def deploy(db_url, local):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--reconcile", type=Path, metavar="REFERENCE")
+    operation = parser.add_mutually_exclusive_group()
+    operation.add_argument("--reconcile", type=Path, metavar="REFERENCE")
+    operation.add_argument("--inspect", type=Path, metavar="REFERENCE")
     args = parser.parse_args()
     db_url = os.environ.get("SUPABASE_DB_URL")
     if not db_url:
@@ -237,7 +316,10 @@ def main():
     validate_db_url(db_url)
 
     local = local_versions()
-    if args.reconcile:
+    if args.inspect:
+        check_reconciliation(db_url, local, args.inspect)
+        print("Inspeção somente leitura concluída.")
+    elif args.reconcile:
         reconcile(db_url, local, args.reconcile)
     else:
         deploy(db_url, local)
