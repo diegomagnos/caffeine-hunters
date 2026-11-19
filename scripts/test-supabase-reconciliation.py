@@ -1,12 +1,15 @@
 """Exercise the production reconciliation against the isolated RLS fixture."""
 
 from importlib.util import module_from_spec, spec_from_file_location
+import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
+from time import sleep
 from types import SimpleNamespace
+from unittest.mock import patch
 
 SPEC = spec_from_file_location("deployment", "scripts/deploy-supabase-migrations.py")
 deployment = module_from_spec(SPEC)
@@ -20,7 +23,10 @@ READER_URL = DIAGNOSTICS_URL.replace("postgres@", "history_reader@")
 REFUSED_URL = URL.replace(":5432/", ":1/")
 TLS_URL = URL.replace("sslmode=disable", "sslmode=require")
 INVALID_URL = URL + "&synthetic_private_option=synthetic_private_value"
-FIXTURE_URLS = {URL, DIAGNOSTICS_URL, READER_URL, REFUSED_URL, TLS_URL, INVALID_URL}
+VERIFIED_URL = "postgresql://postgres@localhost:5432/postgres"
+MISMATCHED_URL = VERIFIED_URL.replace("@localhost", "@127.0.0.1")
+TLS_TARGETS = {VERIFIED_URL, MISMATCHED_URL}
+FIXTURE_URLS = {URL, DIAGNOSTICS_URL, READER_URL, REFUSED_URL, TLS_URL, INVALID_URL} | TLS_TARGETS
 
 
 def docker(*args, **kwargs):
@@ -36,9 +42,14 @@ def sql(query, url=URL):
 
 def run_in_fixture(args, **kwargs):
     assert args[-1] in FIXTURE_URLS and args[0] in {"psql", "supabase"}
+    env = kwargs.get("env", os.environ)
+    tls_env = ["-e", "PGSSLMODE=disable"]
+    if args[-1] in TLS_TARGETS:
+        assert env["PGSSLMODE"] == "verify-full"
+        tls_env = ["-e", "PGSSLMODE=verify-full", "-e", f"PGSSLROOTCERT={env['PGSSLROOTCERT']}"]
     return subprocess.run(
         # The CLI rebuilds the URI, so it also needs the TLS mode in its environment.
-        [*DOCKER, "exec", "-i", "-e", "PGSSLMODE=disable", "-e", "LC_ALL=C",
+        [*DOCKER, "exec", "-i", *tls_env, "-e", "LC_ALL=C",
          "-w", "/tmp/caffeine", CONTAINER, *args],
         **kwargs,
     )
@@ -52,6 +63,44 @@ def blocked(action, message, hidden=()):
         assert all(fragment not in str(error) for fragment in hidden), str(error)
     else:
         raise AssertionError("A operação deveria ter sido bloqueada.")
+
+
+def install_tls_fixture(directory):
+    # A private test CA reproduces a pooler chain that the system bundle cannot verify.
+    ca = Path(directory) / "root.crt"
+    ca_key = Path(directory) / "root.key"
+    cert = Path(directory) / "server.crt"
+    key = Path(directory) / "server.key"
+    request = Path(directory) / "server.csr"
+    extensions = Path(directory) / "server.ext"
+    extensions.write_text("subjectAltName=DNS:localhost\nextendedKeyUsage=serverAuth\n", encoding="utf-8")
+    openssl_commands = [
+        ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2",
+         "-subj", "/CN=Caffeine Test CA", "-addext", "basicConstraints=critical,CA:TRUE",
+         "-keyout", ca_key, "-out", ca],
+        ["req", "-new", "-newkey", "rsa:2048", "-nodes", "-subj", "/CN=localhost",
+         "-keyout", key, "-out", request],
+        ["x509", "-req", "-in", request, "-CA", ca, "-CAkey", ca_key, "-CAcreateserial",
+         "-days", "2", "-extfile", extensions, "-out", cert],
+    ]
+    for command in openssl_commands:
+        subprocess.run(["openssl", *command], check=True, capture_output=True)
+    for file in (ca, cert, key):
+        docker("cp", file, f"{CONTAINER}:/tmp/caffeine/{file.name}")
+    docker("cp", "-L", "/etc/ssl/certs/ca-certificates.crt", f"{CONTAINER}:/tmp/caffeine/system-ca.crt")
+    docker("exec", CONTAINER, "chown", "postgres:postgres", "/tmp/caffeine/server.crt", "/tmp/caffeine/server.key")
+    docker("exec", CONTAINER, "chmod", "600", "/tmp/caffeine/server.key")
+    sql("ALTER SYSTEM SET ssl_cert_file = '/tmp/caffeine/server.crt'")
+    sql("ALTER SYSTEM SET ssl_key_file = '/tmp/caffeine/server.key'")
+    sql("ALTER SYSTEM SET ssl = on")
+    sql("SELECT pg_reload_conf()")
+    for _ in range(20):
+        try:
+            sql("SELECT 1", TLS_URL)
+            return
+        except subprocess.CalledProcessError:
+            sleep(0.25)
+    raise AssertionError("O PostgreSQL descartável não ativou TLS.")
 
 
 cli = shutil.which("supabase")
@@ -149,5 +198,29 @@ with TemporaryDirectory() as directory:
     sql(f"DELETE FROM supabase_migrations.schema_migrations WHERE version = '{profiles}'")
     blocked(reconcile, "Histórico remoto divergente")
     assert deployment.remote_history(URL) == ("table_present", [groups])
+
+deployment.validate_db_url(VERIFIED_URL)
+deployment.validate_db_url(VERIFIED_URL + "?sslmode=verify-full")
+blocked(lambda: deployment.validate_db_url(VERIFIED_URL + "?application_name=fixture#&sslmode=disable"),
+        "SUPABASE_DB_URL inválida", ("localhost",))
+for option in ("sslmode=require", "sslmode=disable&sslmode=verify-full",
+               "sslrootcert=synthetic_private_value", "requiressl=1", "service=synthetic_private_value",
+               "host=%2Ftmp", "gssencmode=require"):
+    blocked(lambda: deployment.validate_db_url(VERIFIED_URL + "?" + option),
+            "sobrepõem o TLS ou host", ("localhost", "synthetic_private_value"))
+
+with TemporaryDirectory() as directory:
+    install_tls_fixture(directory)
+    with patch.dict(os.environ, PGSSLMODE="verify-full", PGSSLROOTCERT="/tmp/caffeine/system-ca.crt"):
+        blocked(lambda: deployment.remote_history(VERIFIED_URL),
+                "Não foi possível validar a cadeia", ("localhost",))
+        assert not deployment.run_cli(VERIFIED_URL, "migration", "list")
+
+    with patch.dict(os.environ, PGSSLMODE="verify-full", PGSSLROOTCERT="/tmp/caffeine/root.crt"):
+        assert deployment.remote_history(VERIFIED_URL) == ("table_present", [groups])
+        assert deployment.run_cli(VERIFIED_URL, "migration", "list")
+        blocked(lambda: deployment.remote_history(MISMATCHED_URL),
+                "O nome não corresponde ao certificado", ("127.0.0.1", "localhost"))
+        assert not deployment.run_cli(MISMATCHED_URL, "migration", "list")
 
 print("Reconciliação aprovada com CLI 2.54.11 e PostgreSQL 17 descartável.")

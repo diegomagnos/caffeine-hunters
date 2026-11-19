@@ -39,10 +39,24 @@ jobs:
         env:
           OPERATION: ${{ inputs.operation }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_SSL_ROOT_CERT: ${{ secrets.SUPABASE_DB_SSL_ROOT_CERT }}
           PGSSLMODE: verify-full
-          PGSSLROOTCERT: /etc/ssl/certs/ca-certificates.crt
+          PGGSSENCMODE: disable
           PGCONNECT_TIMEOUT: "10"
         run: |
+          if [[ -z "$SUPABASE_DB_SSL_ROOT_CERT" ]]; then
+            echo "::error::Configure SUPABASE_DB_SSL_ROOT_CERT no environment production com a CA do Supabase em PEM."
+            exit 1
+          fi
+          PGSSLROOTCERT="$(mktemp "$RUNNER_TEMP/supabase-ca.XXXXXX")"
+          trap 'rm -f -- "$PGSSLROOTCERT"' EXIT
+          printf '%s\n' "$SUPABASE_DB_SSL_ROOT_CERT" > "$PGSSLROOTCERT"
+          unset SUPABASE_DB_SSL_ROOT_CERT
+          if ! openssl x509 -in "$PGSSLROOTCERT" -noout -checkend 0 > /dev/null 2>&1; then
+            echo "::error::A CA do Supabase deve ser um certificado PEM válido e não vencido."
+            exit 1
+          fi
+          export PGSSLROOTCERT
           case "$OPERATION" in
             deploy) python3 -u scripts/deploy-supabase-migrations.py ;;
             reconcile) python3 -u scripts/deploy-supabase-migrations.py --reconcile "$RUNNER_TEMP/caffeine-baseline.json" ;;

@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 MIGRATIONS = Path("supabase/migrations")
 FILENAME = re.compile(r"([0-9]{12}|[0-9]{14})_[a-z0-9_]+\.sql")
@@ -20,9 +21,12 @@ HISTORY_ABSENCES = {
 CONNECTION_ERRORS = (
     (("could not translate host name", "name or service not known"),
      "DNS do PostgreSQL. Confira o host do Session pooler."),
-    (("certificate verify failed", "root certificate file", "server certificate for",
-      "ssl error", "ssl was required", "ssl handshake", "tls handshake", "ssl negotiation", "invalid sslmode"),
-     "TLS do PostgreSQL. Confira o nome do servidor e as CAs usadas com verify-full."),
+    (("does not match host name", "does not match the host name"),
+     "TLS do PostgreSQL. O nome não corresponde ao certificado. Use o hostname do Session pooler exibido no painel."),
+    (("certificate verify failed", "root certificate file"),
+     "TLS do PostgreSQL. Não foi possível validar a cadeia. Confira a CA do painel em SUPABASE_DB_SSL_ROOT_CERT."),
+    (("ssl error", "ssl was required", "ssl handshake", "tls handshake", "ssl negotiation", "invalid sslmode"),
+     "TLS do PostgreSQL. A negociação falhou. Confira o endpoint do Session pooler e mantenha verify-full."),
     (("authentication failed", "no password supplied", "tenant or user not found",
       "no pg_hba.conf entry", "is not permitted to log in"),
      "autenticação ou acesso ao PostgreSQL. Confira projeto, usuário, senha e restrições de acesso."),
@@ -36,6 +40,26 @@ SQL_ERRORS = {
     "42703": "coluna esperada pela consulta ausente.",
     "57014": "consulta cancelada ou limite de tempo excedido.",
 }
+
+
+def validate_db_url(db_url):
+    if "#" in db_url or re.search(r"[\x00-\x20\x7f]", db_url):
+        raise SystemExit("SUPABASE_DB_URL inválida. Use percent-encoding na URI do Session pooler.")
+    try:
+        url = urlsplit(db_url)
+        host = unquote(url.hostname or "")
+        options = parse_qsl(url.query, keep_blank_values=True)
+    except ValueError:
+        raise SystemExit("SUPABASE_DB_URL inválida. Confira a URI do Session pooler.") from None
+    if url.scheme not in ("postgresql", "postgres") or not host or host.startswith(("/", "@")) or "," in host:
+        raise SystemExit("SUPABASE_DB_URL deve conter a URI PostgreSQL com o host do Session pooler.")
+    # libpq honors URI options over the environment. The CLI rebuilds the URI
+    # and gets its TLS settings from PGSSLMODE and PGSSLROOTCERT again.
+    workflow_options = {"sslrootcert", "requiressl", "sslsni", "sslnegotiation",
+                        "gssencmode", "service", "host", "hostaddr"}
+    for key, value in options:
+        if key in workflow_options or (key == "sslmode" and value != "verify-full"):
+            raise SystemExit("Remova as opções de conexão que sobrepõem o TLS ou host do workflow de SUPABASE_DB_URL.")
 
 
 def local_versions():
@@ -210,6 +234,7 @@ def main():
     db_url = os.environ.get("SUPABASE_DB_URL")
     if not db_url:
         raise SystemExit("Configure SUPABASE_DB_URL no environment production.")
+    validate_db_url(db_url)
 
     local = local_versions()
     if args.reconcile:
