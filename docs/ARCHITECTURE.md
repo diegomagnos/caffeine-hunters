@@ -4,7 +4,7 @@ Evolução implementada: [autenticação](AUTH.md) e [grupos reais](GROUPS.md) u
 
 Status: fundação técnica implementada para revisão humana conforme [registro técnico](TECHNICAL_FOUNDATION.md). Next.js/App Router, React, TypeScript estrito, Tailwind, npm e testes locais estão configurados. Os modelos e mecanismos funcionais abaixo continuam propostas futuras; autenticação e perfis mínimos foram implementados com Supabase conforme [AUTH.md](AUTH.md); criação/listagem de grupos usam a persistência descrita em [GROUPS.md](GROUPS.md).
 
-A preparação de visualização gratuita usa exportação estática opt-in da interface demonstrativa, compatível com Cloudflare Pages Free conforme [procedimento e limites](../README.md#visualização-estática-gratuita--preparação). A main está publicada no Cloudflare Pages; esta entrega preserva a configuração existente e não provisiona infraestrutura. O build Next.js normal e as fronteiras do monólito são preservados. Sessão no cliente usa o SDK oficial, e autorização/persistência de perfis usam o backend Supabase/RLS. Hospedagem dinâmica, demais operações de grupos e jobs continuam sujeitos a decisão própria; a exportação não deve receber dados privados nem substituir autorização no servidor.
+A preparação de visualização gratuita usa exportação estática opt-in da interface demonstrativa, compatível com Cloudflare Pages Free conforme [procedimento e limites](../README.md#visualização-estática-gratuita--preparação). A main está publicada no Cloudflare Pages; esta entrega preserva a configuração existente e não provisiona infraestrutura. O build Next.js normal e as fronteiras do monólito são preservados. Sessão no cliente usa o SDK oficial, e autorização/persistência de perfis usam o backend Supabase/RLS. O envio transacional de [convites](INVITATIONS.md) usa uma Edge Function do Supabase. Hospedagem dinâmica da interface e jobs continuam sujeitos a decisão própria. A exportação não deve receber dados privados nem substituir autorização no servidor.
 
 ## Avaliação da stack sugerida
 
@@ -36,7 +36,7 @@ As separações Produto/Contribuição, múltiplos administradores e avaliaçõe
 | Usuário | Identidade autenticada e dados pessoais mínimos; participa de vários grupos e pode ter papéis globais independentes |
 | Grupo | Privado; referencia criador original de forma durável e possui membros, versões de regras e ciclos |
 | Participação e papel no grupo | Relação usuário/grupo com ingresso, elegibilidade a partir do próximo ciclo e saída; vários administradores por grupo; promoção não substitui criador |
-| Convite ou solicitação | Mecanismo de ingresso a definir; não antecipar aprovação, expiração ou aceite |
+| Convite | Link individual com hash no banco e sete dias de validade; aceite transacional por conta com o e-mail confirmado |
 | Versão de regras | Configuração, autor, data, diferenças e vigência para próximos ciclos; cada ciclo referencia a versão aplicável |
 | Ciclo | Pertence a um grupo, tem prazos e contribuições; proposta de registrar elegibilidade contextual e estado de encerramento |
 | Obrigação, saída e decisão administrativa | Obrigação ligada à participação/ciclo; solicitação e saída preservadas; decisão de manter/dispensar obrigações com administrador e justificativa, sem bloquear saída |

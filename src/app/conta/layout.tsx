@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AuthProvider } from "@/modules/auth/provider";
 export const metadata = {
   title: "Conta | Caffeine Hunters",
   robots: { index: false, follow: false },
@@ -11,11 +10,11 @@ export default function AccountLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProvider>
+    <>
       <div className="notice">
         <strong>Sua conta</strong>
         <p>
-          Crie seus grupos privados e gerencie seu perfil. Ciclos e avaliações
+          Participe de grupos privados e gerencie seu perfil. Ciclos e avaliações
           reais ainda não estão disponíveis.
         </p>
         <Link href="/">Explorar demonstração pública</Link> ·{" "}
@@ -23,6 +22,6 @@ export default function AccountLayout({
         <Link href="/conta/grupos/">Meus grupos</Link>
       </div>
       {children}
-    </AuthProvider>
+    </>
   );
 }

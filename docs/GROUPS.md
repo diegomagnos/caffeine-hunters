@@ -6,11 +6,11 @@ Criação, listagem e detalhes de grupos privados usando a autenticação existe
 
 Acesse **Conta → Meus grupos** (`/conta/grupos/`) e entre com a autenticação existente. Há também um link na demonstração `/grupos/`, que continua com dados sintéticos. Escolha **Novo grupo** para informar um nome de 1 a 80 caracteres e, se desejar, uma descrição de até 2000 caracteres. O banco valida os limites e armazena a ausência de descrição como texto vazio. Grupos diferentes podem ter o mesmo nome. A lista mostra os grupos dos quais a identidade autenticada participa, em ordem de criação decrescente, com o papel do usuário e um link para os detalhes.
 
-Em um Supabase de teste, aplique as migrações em ordem. Em um ambiente com perfis e grupos já registrados, a versão pendente é [`20261123000100_group_details.sql`](../supabase/migrations/20261123000100_group_details.sql). Ela mantém os dados existentes e deve preceder a publicação da nova interface. O procedimento de implantação passa pelo workflow manual e aprovado. [Migrações Supabase](SUPABASE_MIGRATIONS.md)
+Em um Supabase de teste, aplique as migrações em ordem. Em um ambiente com perfis e grupos já registrados, aplique [`20261123000100_group_details.sql`](../supabase/migrations/20261123000100_group_details.sql) e depois a [migração de convites](INVITATIONS.md#implantação-manual). O procedimento de implantação passa pelo workflow manual e aprovado. [Migrações Supabase](SUPABASE_MIGRATIONS.md)
 
-Mantenha a API configurada com o schema `public`, a RLS ativa e a escrita em grupos e membros restrita à RPC de criação.
+Mantenha a API configurada com o schema `public`, a RLS ativa e a escrita em grupos e membros restrita às RPCs de criação e aceite.
 
-Não há variáveis novas, segredos ou alteração de Google, perfil ou configuração do Cloudflare. As duas variáveis públicas existentes de [AUTH.md](AUTH.md) continuam suficientes. O build exporta uma página fixa em `/conta/grupos/detalhes/`. A aplicação usa o parâmetro `id` da URL para consultar o grupo após a autenticação. As consultas e as RPCs usam o JWT do SDK no Supabase, com autorização no PostgreSQL. Dados privados não são gerados no HTML nem persistidos em armazenamento próprio da aplicação. Sem configuração, a tela informa indisponibilidade e não consulta grupos.
+As duas variáveis públicas de [AUTH.md](AUTH.md) atendem à interface no Cloudflare Pages. O envio usa a configuração de runtime da [Edge Function de convites](INVITATIONS.md#implantação-manual). O build exporta uma página fixa em `/conta/grupos/detalhes/`. A aplicação usa o parâmetro `id` da URL para consultar o grupo após a autenticação. As consultas e as RPCs usam o JWT do SDK no Supabase, com autorização no PostgreSQL. Dados privados não são gerados no HTML nem persistidos em armazenamento próprio da aplicação. Sem configuração, a tela informa indisponibilidade e não consulta grupos.
 
 ## Modelo e garantias
 
@@ -26,7 +26,7 @@ RLS filtra grupos, membros e configuração pela participação. O helper em sch
 
 Os detalhes apresentam o Dono, o Fundador e os membros atuais. A RPC `public.list_group_members(target_group_id)` verifica a participação do solicitante no banco e retorna identificador, papel administrativo e nome de exibição de membros atuais. O nome é compartilhado somente com participantes do mesmo grupo. Na ausência de nome, a tela usa o identificador abreviado ou “Você”. A política de leitura da tabela `profiles` continua limitada ao próprio perfil.
 
-As FKs de fundador, Dono, membros e auditoria usam `RESTRICT`, preservando identidade/histórico. Exclusão de contas vinculadas exige futura política de retenção/anonimização; não há exclusão automática em cascata desses dados. Convites, ingresso, saída, transferência, administração de membros, ciclos, cafés e avaliações continuam fora do escopo.
+As FKs de fundador, Dono, membros e auditoria usam `RESTRICT`, preservando identidade/histórico. Exclusão de contas vinculadas exige futura política de retenção/anonimização; não há exclusão automática em cascata desses dados. O [ingresso por convite](INVITATIONS.md) usa o modelo de membros existente. Saída, transferência, administração de membros, ciclos, cafés e avaliações continuam previstos para outras entregas.
 
 ## Como testar
 

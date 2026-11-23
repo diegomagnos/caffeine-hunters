@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { getAuthClient } from "@/modules/auth/client";
+import { finishInvitationAuth, invitationPath } from "@/modules/groups/invitation-context";
 import { useAuth } from "@/modules/auth/provider";
 export default function CallbackPage() {
   const started = useRef(false);
@@ -31,6 +32,10 @@ export default function CallbackPage() {
           });
           if (error) throw error;
           if (type === "recovery") setRecovery(true);
+          if (type === "signup" && finishInvitationAuth("signup")) {
+            window.location.replace(invitationPath);
+            return;
+          }
           setMessage(
             type === "recovery"
               ? "Link verificado. Escolha sua nova senha."
@@ -44,6 +49,10 @@ export default function CallbackPage() {
               : undefined,
           );
           if (error) throw error;
+          if (finishInvitationAuth("google")) {
+            window.location.replace(invitationPath);
+            return;
+          }
           setMessage("Autenticação concluída. Você pode acessar seu perfil.");
         } else throw new Error();
       } catch {

@@ -17,7 +17,7 @@ Após a fundação, a [interface demonstrativa](INITIAL_INTERFACE.md) apresenta 
 
 Permanecem confirmadas a configuração de frequência, quantidade mínima, prazo de entrega, inadimplência e penalidades por grupo; uma contribuição por membro elegível por ciclo; preservação de avaliações anteriores e regras históricas. Contribuição mensal de 250g continua sendo sugestão inicial configurável. Penalidade por falta de contribuição pode bloquear novas avaliações até regularização conforme a política aplicável; não se confunde com ausência de avaliação.
 
-A evolução aprovada de [grupos reais](GROUPS.md) distingue Fundador permanente de Dono único, sempre administrador, e reserva ao Dono a configuração das permissões administrativas. Esse refinamento governa as referências administrativas anteriores abaixo. Apenas criação/listagem estão disponíveis; ingresso e gestão de papéis continuam futuros.
+A evolução aprovada de [grupos reais](GROUPS.md) distingue Fundador permanente de Dono único, sempre administrador, e reserva ao Dono a configuração das permissões administrativas. Esse refinamento governa as referências administrativas anteriores abaixo. A criação, a listagem e os detalhes são complementados pelo [ingresso por convite](INVITATIONS.md), com ativação condicionada à configuração do envio. A gestão de papéis continuará em uma etapa própria.
 
 ## Perfis e limites aprovados
 
@@ -27,7 +27,7 @@ Qualquer usuário autenticado pode sugerir correções no catálogo. Moderadores
 
 ## MVP e evolução — planejamento proposto
 
-Priorizar fundação e autenticação, grupos privados e permissões, ciclos, contribuições com cadastro manual e avaliações com médias internas e encerramento automático. A entrada terá seu mecanismo definido antes de implementar ingresso de novos membros; a regra aprovada de participação apenas no próximo ciclo permanece válida qualquer que seja esse mecanismo.
+Priorizar fundação e autenticação, grupos privados e permissões, ciclos, contribuições com cadastro manual e avaliações com médias internas e encerramento automático. O ingresso por convite registra a data de entrada para preservar o início da participação no próximo ciclo.
 
 Planejar depois catálogo compartilhado e vinculação, assistência por IA com leitura de embalagem e pesquisa externa, moderação global, médias publicadas por autorização e rankings estatísticos completos. O cadastro manual inicial mantém nome e marca contextuais e quantidade na contribuição; a busca global passa a iniciar o fluxo quando a fase de catálogo estiver disponível. Isso é sequenciamento de entrega, preservando a decisão 12 na visão completa.
 
@@ -50,7 +50,6 @@ Estas questões exigem decisão do responsável; alternativas técnicas não sã
 
 | Questão | Impacto e decisão necessária |
 | --- | --- |
-| Convites e aprovação de entrada; expiração, revogação e aceite | Definir mecanismo de ingresso e prevenção de abuso sem mudar elegibilidade apenas no próximo ciclo |
 | Critérios completos de inadimplência por falta de contribuição | Definir gatilhos, tolerância, penalidades, recursos, regularização e autoridades; ausência de avaliação não gera penalidade automática |
 | Remoção de administradores e transferência de titularidade | Definir autoridade, último administrador e sucessão, preservando criador original |
 | Escala e obrigatoriedade das cinco características sensoriais | Completar formulário e validade; nota geral direta já está aprovada em 1 a 5 estrelas |

@@ -561,3 +561,36 @@ button:disabled {
 .group-description { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .auth-card textarea { min-height: 120px; resize: vertical; }
+
+.header-account, .header-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.header-account { flex-wrap: wrap; }
+.header-account > p { flex-basis: 100%; margin: 0; }
+.header-account-name {
+  max-width: 17ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.account-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-sand);
+  font-weight: 700;
+}
+.account-avatar img { position: absolute; inset: 0; object-fit: cover; }
+@media (max-width: 700px) {
+  .header-account { order: 1; max-width: 100%; }
+  .site-header nav { order: 2; }
+}
+.invitation-actions { display: flex; flex-wrap: wrap; gap: 8px; }

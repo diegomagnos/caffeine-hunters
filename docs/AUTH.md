@@ -26,7 +26,7 @@ Evolução posterior: `/conta/grupos/` usa o mesmo provider para [grupos reais](
 
 Callbacks removem query/fragmento do histórico, usam `referrer=no-referrer`, não registram tokens nem exibem erros externos brutos, e não aceitam `next`/redirecionamento arbitrário. Links inválidos, expirados, reutilizados ou cancelamento no provedor falham sem liberar redefinição de senha. PKCE OAuth deve terminar no mesmo navegador/origem que iniciou o fluxo. Confirmação e recuperação usam `token_hash` via template manual abaixo e funcionam em outro dispositivo. A autorização de recuperação só existe em memória depois da verificação; recarregar a página exige um novo link. Nenhum callback implícito com tokens em fragmento é aceito.
 
-Sessões são verificadas ao abrir a área de conta e em eventos do SDK; login/renovação/logout sincronizam a interface. Falha de validação fecha o acesso visual ao perfil. Logout usa o escopo global padrão do SDK, revogando refresh tokens; um access token já emitido pode continuar válido até sua expiração. RLS continua aplicável. Escolher validade curta adequada do JWT no painel, sem prometer revogação instantânea de tokens emitidos.
+O cabeçalho usa o nome de exibição do perfil, o avatar Google quando disponível e a inicial como alternativa. Ações de perfil e saída acompanham a conta atual. Sessões são verificadas ao abrir a aplicação e em eventos do SDK; login/renovação/logout sincronizam a interface. Falha de validação fecha o acesso visual ao perfil. Logout usa o escopo global padrão do SDK, revogando refresh tokens; um access token já emitido pode continuar válido até sua expiração. RLS continua aplicável. Escolher validade curta adequada do JWT no painel, sem prometer revogação instantânea de tokens emitidos.
 
 ## Configuração manual pelo responsável — sem executar neste PR
 
@@ -45,6 +45,8 @@ Sessões são verificadas ao abrir a área de conta e em eventos do SDK; login/r
 
 6. Copiar `.env.example` para `.env.local` para execução local. Preencher apenas `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (chave publishable; anon legada é compatível). Essas variáveis são públicas, incorporadas no build. O build rejeita configuração parcial e chaves que não sejam publishable ou JWT com papel anon, antes de gerar o bundle. Nunca usar `service_role`, `sb_secret_...`, senha PostgreSQL, Client Secret Google ou chave administrativa. Nenhuma conexão direta PostgreSQL vai para o cliente.
 7. Após aprovação humana para configuração de produção, o responsável poderá definir essas duas variáveis no build do Pages e reconstruir. Sem elas, a demonstração funciona e os formulários reais ficam indisponíveis. O build continua `npm run build:static`, diretório `out`, sem runtime adicional. Não fazer esses passos automaticamente. Previews devem preferir projeto de teste separado, dentro da cota gratuita, e não compartilhar sessões com produção.
+
+Os [convites de grupos](INVITATIONS.md) usam os mesmos callbacks e provedores. O cadastro por e-mail/senha para usuários externos exige SMTP do Auth, mesmo quando a entrega dos convites estiver disponível.
 
 ## Identidades e duplicatas
 

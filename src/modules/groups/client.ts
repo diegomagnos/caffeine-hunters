@@ -84,3 +84,43 @@ export async function createGroup(
   if (error || !data) throw new Error("group_create_failed");
   return data;
 }
+
+export type GroupInvitation = {
+  id: string;
+  email: string;
+  status: "pending" | "accepted" | "cancelled" | "expired";
+  delivery_status: "pending" | "sent" | "unconfirmed";
+  expires_at: string;
+  can_manage: boolean;
+};
+
+export async function listInvitations(groupId: string): Promise<GroupInvitation[]> {
+  const { data, error } = await getAuthClient()!.rpc("list_group_invitations", {
+    target_group_id: groupId,
+  });
+  if (error || !data) throw new Error("group_invitations_read_failed");
+  return data;
+}
+
+export async function sendInvitation(groupId: string, recipient: { email: string } | { invitationId: string }) {
+  const { data, error } = await getAuthClient()!.functions.invoke<{ delivery: string }>(
+    "send-group-invitation", { body: { groupId, ...recipient } },
+  );
+  if (error || !data) {
+    const status = error?.context?.status;
+    if (status === 400) throw new Error("Informe um endereço de e-mail válido.");
+    if (status === 403) throw new Error("Somente administradores deste grupo podem enviar convites.");
+    if (status === 409) throw new Error("Já existe um convite pendente para este endereço ou o convite selecionado foi encerrado.");
+    if (status === 429) throw new Error("Limite de envio atingido. Aguarde antes de tentar novamente.");
+    throw new Error("Não foi possível confirmar a operação. Confira a lista de convites antes de tentar novamente.");
+  }
+  return data.delivery === "sent";
+}
+
+export async function cancelInvitation(groupId: string, invitationId: string) {
+  const { error } = await getAuthClient()!.rpc("cancel_group_invitation", {
+    target_group_id: groupId,
+    invitation_id: invitationId,
+  });
+  if (error) throw new Error("Não foi possível cancelar o convite. Confira o status na lista.");
+}

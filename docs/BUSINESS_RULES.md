@@ -21,7 +21,13 @@ Permanece na visão o compartilhamento público autorizado de médias e rankings
 
 ## Evolução aprovada — grupos reais (17/11/2026)
 
-O escopo de [grupos reais](GROUPS.md) refina as decisões administrativas abaixo: o criador é **Fundador (Founder)** permanente e o primeiro **Dono (Owner)**. Cada grupo tem exatamente um Dono, obrigatoriamente administrador, com todas as permissões administrativas. O Fundador não recebe permissões vitalícias. Múltiplos administradores e transferência são previstos no modelo, sem operações disponíveis nesta etapa. As capacidades administrativas são configuráveis por grupo exclusivamente pelo Dono; as autoridades das decisões abaixo devem ser lidas sob essa configuração. Grupos são privados por padrão. Convites, ingresso, promoção/remoção e transferência permanecem fora desta entrega.
+O escopo de [grupos reais](GROUPS.md) refina as decisões administrativas abaixo: o criador é **Fundador (Founder)** permanente e o primeiro **Dono (Owner)**. Cada grupo tem exatamente um Dono, obrigatoriamente administrador, com todas as permissões administrativas. O Fundador não recebe permissões vitalícias. Múltiplos administradores e transferência são previstos no modelo, sem operações disponíveis nesta etapa. As capacidades administrativas são configuráveis por grupo exclusivamente pelo Dono; as autoridades das decisões abaixo devem ser lidas sob essa configuração. Grupos são privados por padrão. Promoção, remoção e transferência seguem previstas para entregas próprias.
+
+## Convites e ingresso em grupos privados
+
+O Dono e todos os administradores podem emitir, consultar, reenviar e cancelar convites no próprio grupo. Essa capacidade decorre do cargo e independe das flags configuráveis. Participantes comuns podem consultar a lista de membros do grupo.
+
+O convite por e-mail usa um link individual com validade de sete dias. A mesma mensagem atende contas existentes e pessoas que precisarão se cadastrar. O aceite exige uma sessão no endereço convidado com confirmação no Auth. Cancelamento e aceite encerram o convite, e reenvio substitui o link anterior. O ingresso é imediato e auditado. A data de entrada será usada para iniciar contribuições e avaliações somente no próximo ciclo. [Fluxo e implantação](INVITATIONS.md)
 
 ## As 21 decisões aprovadas
 

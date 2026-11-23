@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CoffeeMark } from "@/components/coffee-mark";
 import { Navigation } from "@/components/navigation";
+import { AuthProvider } from "@/modules/auth/provider";
+import { HeaderAccount } from "@/modules/auth/header-account";
 import "./globals.css";
 import { EnvironmentBanner } from "@/components/environment-banner";
 
@@ -20,26 +22,29 @@ export default function RootLayout({
           Pular para o conteúdo
         </a>
         <EnvironmentBanner />
-        <header className="site-header">
-          <div className="header-inner">
-            <Link
-              className="brand"
-              href="/"
-              aria-label="Caffeine Hunters — início"
-            >
-              <CoffeeMark className="h-9 w-9" />
-              <span>
-                Caffeine
-                <br />
-                Hunters<span className="brand-dot">.</span>
-              </span>
-            </Link>
-            <Navigation />
-          </div>
-        </header>
-        <main id="conteudo" tabIndex={-1} className="page-shell">
-          {children}
-        </main>
+        <AuthProvider>
+          <header className="site-header">
+            <div className="header-inner">
+              <Link
+                className="brand"
+                href="/"
+                aria-label="Caffeine Hunters — início"
+              >
+                <CoffeeMark className="h-9 w-9" />
+                <span>
+                  Caffeine
+                  <br />
+                  Hunters<span className="brand-dot">.</span>
+                </span>
+              </Link>
+              <Navigation />
+              <HeaderAccount />
+            </div>
+          </header>
+          <main id="conteudo" tabIndex={-1} className="page-shell">
+            {children}
+          </main>
+        </AuthProvider>
         <footer className="site-footer">
           <span>Caffeine Hunters · Feito para quem aprecia cada xícara.</span>
           <span>Em desenvolvimento</span>

@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/modules/auth/provider";
 const links = [
   { href: "/conta/entrar/", label: "Conta" },
   { href: "/", label: "Início" },
@@ -9,9 +10,11 @@ const links = [
 ];
 export function Navigation() {
   const pathname = usePathname();
+  const { user } = useAuth();
   return (
     <nav aria-label="Navegação principal">
       {links.map(({ href, label }) => {
+        if (href === "/conta/entrar/" && user) return null;
         const active =
           href === "/"
             ? pathname === "/"

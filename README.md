@@ -4,11 +4,11 @@ Plataforma Web responsiva, com experiência PWA, para clubes de degustação de 
 
 O projeto possui uma **primeira interface demonstrativa navegável**: painel, grupos, detalhes de grupo, ciclo, avaliação e perfil responsivos, com dados fictícios. A área `/conta/` implementa autenticação, perfil, criação, listagem e detalhes de grupos reais via Supabase quando configurada; veja [configuração, segurança e limitações de e-mail](docs/AUTH.md). Consulte o [registro da interface](docs/INITIAL_INTERFACE.md) para rotas, decisões e limitações. Este repositório continua sendo a fonte principal de conhecimento. As próximas etapas exigem autorização própria e revisão humana.
 
-A implementação de grupos, migração necessária e roteiro de teste estão em [Grupos reais](docs/GROUPS.md).
+A implementação de grupos e o roteiro de teste estão em [Grupos reais](docs/GROUPS.md). O [fluxo de convites](docs/INVITATIONS.md) documenta a migração e o envio transacional.
 
 ## Visão do produto
 
-- Grupos privados com múltiplos administradores, criador original preservado e regras versionadas para próximos ciclos. O fluxo de convites e aprovação de entrada ainda precisa de definição.
+- Grupos privados com múltiplos administradores, criador original preservado e regras versionadas para próximos ciclos. O ingresso usa convites individuais enviados por e-mail.
 - Contribuição de um café por membro a cada ciclo; sugestão inicial de frequência mensal e quantidade de 250g por membro.
 - Avaliações sensoriais e nota geral direta de 1 a 5 estrelas; visibilidade após avaliação própria, edição auditada até encerramento automático e médias de notas válidas.
 - Penalidades configuráveis, preservando avaliações anteriores e o histórico das regras.
