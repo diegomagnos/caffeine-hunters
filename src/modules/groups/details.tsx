@@ -8,6 +8,7 @@ import {
   readGroupDetails,
   type GroupDetails,
 } from "./client";
+import { GroupInvitations } from "./invitations";
 
 const uuidPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
@@ -90,6 +91,7 @@ function GroupDetailsView({
   }
 
   const { group, members } = state.details;
+  const isAdmin = members.some((member) => member.user_id === userId && member.is_admin);
   function memberName(id: string, name?: string | null) {
     if (id === userId) return name ? `${name} (você)` : "Você";
     return name || `Usuário ${id.slice(0, 8)}`;
@@ -131,10 +133,11 @@ function GroupDetailsView({
           ))}
         </ul>
       </section>
+      {isAdmin && <GroupInvitations groupId={group.id} />}
       <section className="card" aria-labelledby="group-features">
         <h2 id="group-features">Recursos ainda indisponíveis</h2>
         <p>
-          Convites, gestão de membros e administradores, regras, ciclos, cafés e
+          Gestão de membros e administradores, regras, ciclos, cafés e
           avaliações.
         </p>
       </section>

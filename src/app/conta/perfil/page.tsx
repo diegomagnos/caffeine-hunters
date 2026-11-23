@@ -1,39 +1,15 @@
 "use client";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { getAuthClient } from "@/modules/auth/client";
 import { RequireAuth, useAuth } from "@/modules/auth/provider";
-function Profile() {
-  const { user } = useAuth();
-  const [name, setName] = useState("");
-  const [loaded, setLoaded] = useState(false);
+function Profile({ initialName }: { initialName: string }) {
+  const { user, setDisplayName } = useAuth();
+  const [name, setName] = useState(initialName);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (!user) return;
-    let active = true;
-    getAuthClient()!
-      .from("profiles")
-      .select("display_name")
-      .eq("id", user.id)
-      .single()
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error)
-          setMessage(
-            "Não foi possível carregar o perfil. Recarregue e confira sua sessão.",
-          );
-        else {
-          setName(data.display_name);
-          setLoaded(true);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [user]);
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!user || busy || !loaded) return;
+    if (!user || busy) return;
     setBusy(true);
     setMessage("");
     try {
@@ -44,6 +20,7 @@ function Profile() {
         .select("id")
         .single();
       if (error || !data) throw new Error();
+      setDisplayName(user.id, name.trim());
       setMessage("Perfil salvo.");
     } catch {
       setMessage(
@@ -67,7 +44,6 @@ function Profile() {
   return (
     <section className="card auth-card">
       <p>{user?.email}</p>
-      {!loaded && !message && <p role="status">Carregando perfil…</p>}
       <form onSubmit={save} className="stack">
         <label>
           Nome de exibição
@@ -76,10 +52,10 @@ function Profile() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={80}
-            disabled={!loaded || busy}
+            disabled={busy}
           />
         </label>
-        <button disabled={!loaded || busy}>
+        <button disabled={busy}>
           {busy ? "Aguarde…" : "Salvar perfil"}
         </button>
       </form>
@@ -91,12 +67,18 @@ function Profile() {
   );
 }
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   return (
     <>
       <h1>Meu perfil real</h1>
       <RequireAuth>
-        <Profile key={user?.id} />
+        {!profile ? (
+          <p role="status">Carregando perfil…</p>
+        ) : "error" in profile ? (
+          <p role="alert">Não foi possível carregar o perfil. Recarregue e confira sua sessão.</p>
+        ) : (
+          <Profile key={user?.id} initialName={profile.name} />
+        )}
       </RequireAuth>
     </>
   );

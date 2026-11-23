@@ -18,3 +18,14 @@ test("carrega HTML, CSS e JavaScript exportados sem servidor Next.js", async ({ 
   expect(missing.status()).toBe(404);
   expect(await missing.text()).toContain("404");
 });
+
+test("a rota exportada de convite abre sem divulgar o token em requisições HTTP", async ({ page }) => {
+  const token = "ab".repeat(32);
+  const requests: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  const response = await page.goto(`/conta/convite/#token=${token}`);
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Convite para grupo privado" })).toBeVisible();
+  await expect(page).toHaveURL(/\/conta\/convite\/$/);
+  expect(requests.filter((url) => url.includes(token))).toEqual([]);
+});

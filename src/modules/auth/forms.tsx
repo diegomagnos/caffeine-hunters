@@ -3,8 +3,12 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { callbackUrl, getAuthClient, providers } from "./client";
+import { markInvitationAuth } from "@/modules/groups/invitation-context";
 import { useAuth } from "./provider";
-export function AuthForm({ reset = false }: { reset?: boolean }) {
+export function AuthForm({ reset = false, invitation = false }: {
+  reset?: boolean;
+  invitation?: boolean;
+}) {
   const [signup, setSignup] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -30,6 +34,7 @@ export function AuthForm({ reset = false }: { reset?: boolean }) {
           "Se o endereço puder receber a mensagem, enviaremos um link de recuperação. Confira também o spam.",
         );
       } else if (signup) {
+        if (invitation) markInvitationAuth("signup");
         const { error } = await client.auth.signUp({
           email,
           password,
@@ -45,7 +50,7 @@ export function AuthForm({ reset = false }: { reset?: boolean }) {
           password,
         });
         if (error) throw error;
-        router.replace("/conta/perfil/");
+        if (!invitation) router.replace("/conta/perfil/");
       }
     } catch {
       setMessage(
@@ -61,6 +66,7 @@ export function AuthForm({ reset = false }: { reset?: boolean }) {
     setBusy(true);
     setMessage("");
     try {
+      if (invitation) markInvitationAuth("google");
       const { error } = await client.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: callbackUrl(), scopes: "openid email profile" },
@@ -71,9 +77,10 @@ export function AuthForm({ reset = false }: { reset?: boolean }) {
       setBusy(false);
     }
   }
+  const Heading = invitation ? "h2" : "h1";
   return (
     <section className="card auth-card">
-      <h1>{reset ? "Recuperar senha" : signup ? "Criar conta" : "Entrar"}</h1>
+      <Heading>{reset ? "Recuperar senha" : signup ? "Criar conta" : "Entrar"}</Heading>
       {!configured && (
         <p role="status">
           Autenticação ainda não configurada. Nenhuma credencial será enviada.

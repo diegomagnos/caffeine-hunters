@@ -6,7 +6,7 @@ Este é um plano proposto de entregas, sem datas ou autorização automática pa
 
 A consolidação documental (etapa 0) foi integrada no PR #2 e a [primeira interface demonstrativa](INITIAL_INTERFACE.md) no PR #5. O escopo atual autoriza a [fundação de autenticação e perfis com Supabase Free](AUTH.md), mantendo Cloudflare Pages e a demonstração pública. A migração, SDK e interface não configuram automaticamente contas ou produção; validação real e entrega pública de e-mails permanecem condicionadas aos passos manuais documentados. Além do recorte de grupos descrito abaixo, as demais operações das etapas 2–5 e PWA continuam futuras. O refinamento de Fundador/Dono e permissões está registrado nas regras de negócio.
 
-A primeira parte da etapa 2 implementa [criação e listagem de grupos reais](GROUPS.md), com Fundador/Dono, permissões preparadas, RLS e auditoria. Entrada de membros, gestão de administradores e transferência ficam para entregas posteriores; não bloqueiam este recorte aprovado.
+A etapa 2 já tem [criação, listagem e detalhes de grupos reais](GROUPS.md), com Fundador/Dono, permissões por grupo, RLS e auditoria. A entrega de [convites por e-mail](INVITATIONS.md) inclui ingresso com endereço confirmado e identificação da conta no cabeçalho. A ativação depende de migração aprovada, publicação da Edge Function e validação do provedor transacional. Gestão de administradores, transferência e saída serão tratadas em entregas próprias.
 
 ## Fundação e MVP proposto
 
@@ -14,7 +14,7 @@ A primeira parte da etapa 2 implementa [criação e listagem de grupos reais](GR
 | --- | --- | --- |
 | 0 — Consolidação atual | README, produto, 21 regras aprovadas, arquitetura e roadmap consistentes | Decisões, propostas e pendências separadas; revisão de conteúdo/links/diff; nenhuma implementação |
 | 1 — Fundação e autenticação | Aprovar arquitetura, versões, solução de autenticação, acesso a dados; base técnica, configuração e CI | Instalação reproduzível com lockfile, build/tipos/checks iniciais reais; ambientes documentados e nenhum segredo no Git |
-| 2 — Grupos privados e permissões | Criador original, vários administradores, promoção, regras auditadas, ingresso e saída com decisão sobre obrigações (1–4) | Mecanismo de ingresso e permissões restantes definidos; testes de isolamento, vigência, entrada elegível apenas no próximo ciclo e saída sem bloquear por pendência |
+| 2 — Grupos privados e permissões | Criador original, vários administradores, promoção, regras auditadas, ingresso e saída com decisão sobre obrigações (1–4) | Validar envio de convites e ingresso em ambiente de teste; definir permissões restantes; testar elegibilidade no próximo ciclo e saída sem bloquear por pendência |
 | 3 — Ciclos, contribuições e cadastro manual | Regras versionadas, obrigações, prazos e contribuições independentes; nome/marca/quantidade obrigatórios e atributos opcionais (11–12 no recorte manual) | Definir calendário/fuso, entrega, exceções e cumprimento da obrigação; testar integridade, histórico e contribuições distintas mesmo com café repetido; sem exigir catálogo global para registrar manualmente |
 | 4 — Avaliações e médias internas | Cinco características e nota geral direta de 1 a 5 estrelas; bloqueio de visibilidade, edição auditada, avaliação própria, encerramento automático e registro de ausências (5–10) | Aprovar escala/obrigatoriedade sensorial, precisão e validade restante; testes de cálculo, autorização no servidor, concorrência com prazo e Sem avaliações; ausência sem zero ou penalidade automática |
 | 5 — Política de inadimplência e regularização | Aplicar penalidades por contribuição conforme regras aprovadas e liberar após regularização; eventual ranking privado no recorte aprovado | Definir gatilhos, tolerância, autoridade, recursos e alcance; testar bloqueio no servidor e preservação de notas anteriores; definir ranking privado antes de entregá-lo |
@@ -37,7 +37,7 @@ Responsividade, segurança, autorização, acessibilidade, auditoria e testes ac
 ## Decisões necessárias por dependência
 
 - Fundação: versões, ambiente local e escopo técnico registrados nesta tarefa; autenticação, acesso a dados e hospedagem ficam adiados sem bloquear a página estática. Decidi-los antes de implementar suas integrações.
-- Antes dos grupos: convites/aprovação, remoção de administradores, transferência de titularidade, permissões restantes, retenção/exclusão e dados pessoais.
+- Antes das próximas operações de grupos: remoção de administradores, transferência de titularidade, permissões restantes, retenção/exclusão e dados pessoais.
 - Antes dos ciclos e avaliações: calendário, entrega, validade, características sensoriais, precisão e política aplicável de inadimplência; encerramento automático e participação no próximo ciclo já estão aprovados.
 - Antes do catálogo: identidade de Produtos, exatidão dos vínculos, duplicatas, novos cadastros e correções.
 - Antes da IA: custos, fornecedores, orçamento/cotas, fontes e licenças, privacidade e tratamento de falhas.
