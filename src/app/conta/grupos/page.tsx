@@ -7,7 +7,7 @@ export default function GroupsPage() {
     <>
       <h1>Meus grupos</h1>
       <RequireAuth>
-        <MyGroups key={user?.id} />
+        {user && <MyGroups key={user.id} userId={user.id} />}
       </RequireAuth>
     </>
   );

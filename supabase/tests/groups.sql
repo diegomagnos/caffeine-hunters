@@ -4,6 +4,8 @@ insert into auth.users(id) values
  ('11111111-1111-4111-8111-111111111111'),
  ('22222222-2222-4222-8222-222222222222'),
  ('33333333-3333-4333-8333-333333333333');
+update public.profiles set display_name = 'Nome de exibição do Dono'
+  where id = '11111111-1111-4111-8111-111111111111';
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '11111111-1111-4111-8111-111111111111', true);
 select set_config('test.group_a', public.create_group('  Clube A  ', '  Descrição A  ')::text, true);
@@ -62,10 +64,6 @@ do $$ begin
   raise exception 'Nome vazio aceito';
  exception when check_violation then null; end;
  begin
-  perform public.create_group('Nome', E'\n\t');
-  raise exception 'Descrição vazia aceita';
- exception when check_violation then null; end;
- begin
   perform public.create_group(null, 'válida');
   raise exception 'Nome nulo aceito';
  exception when not_null_violation then null; end;
@@ -82,18 +80,44 @@ select set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222
 do $$ begin
  if (select count(*) from public.groups) <> 0 or (select count(*) from public.group_members) <> 0
    or (select count(*) from public.group_admin_permissions) <> 0 then raise exception 'Grupo privado exposto'; end if;
+ if exists(select from public.list_group_members(current_setting('test.group_a')::uuid)) then
+  raise exception 'Nomes de membros de grupo privado expostos';
+ end if;
  update public.group_admin_permissions set manage_group = false where group_id = current_setting('test.group_a')::uuid;
  if found then raise exception 'Estranho alterou permissões'; end if;
 end $$;
 set constraints all deferred;
-select public.create_group('Clube B', 'Descrição B');
+select set_config('test.group_b', public.create_group('Clube B')::text, true);
+do $$ begin
+ if not exists(select from public.groups where id = current_setting('test.group_b')::uuid and description = '')
+   or not exists(select from public.list_group_members(current_setting('test.group_b')::uuid)
+     where user_id = auth.uid() and is_admin and display_name is null) then
+  raise exception 'Criação sem descrição ou projeção do Dono incorreta';
+ end if;
+end $$;
+set constraints all immediate;
+savepoint blank_descriptions;
+set constraints all deferred;
+select public.create_group('Descrição nula', null);
+select public.create_group('Somente espaços', E'\n\t');
 set constraints all immediate;
 do $$ begin
- if (select count(*) from public.groups) <> 1 then raise exception 'Listagem cruzada'; end if;
+ if (select count(*) from public.groups where description = '') <> 3 then
+  raise exception 'Descrições vazias explícitas não foram normalizadas';
+ end if;
+end $$;
+rollback to savepoint blank_descriptions;
+do $$ begin
+ if (select array_agg(id) from public.groups) is distinct from array[current_setting('test.group_b')::uuid] then
+  raise exception 'Listagem cruzada';
+ end if;
 end $$;
 select set_config('request.jwt.claim.sub', '', true);
 do $$ begin
- if (select count(*) from public.groups) <> 0 then raise exception 'Sem identidade leu grupos'; end if;
+ if (select count(*) from public.groups) <> 0 or
+    exists(select from public.list_group_members(current_setting('test.group_a')::uuid)) then
+  raise exception 'Sem identidade leu dados de grupo';
+ end if;
  begin
   perform public.create_group('Inválido', 'Sem identidade');
   raise exception 'Sem identidade criou grupo';
@@ -108,6 +132,10 @@ do $$ begin
  begin
   perform public.create_group('Inválido', 'Anônimo');
   raise exception 'Anônimo criou grupo';
+ exception when insufficient_privilege then null; end;
+ begin
+  perform * from public.list_group_members(current_setting('test.group_a')::uuid);
+  raise exception 'Anônimo consultou nomes de membros';
  exception when insufficient_privilege then null; end;
 end $$;
 reset role;
@@ -146,6 +174,14 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub', '22222222-2222-4222-8222-222222222222', true);
 do $$ begin
  if (select count(*) from public.groups) <> 2 then raise exception 'Grupos do membro ausentes'; end if;
+ if (select count(*) from public.list_group_members(current_setting('test.group_a')::uuid)) <> 3 or
+   not exists(select from public.list_group_members(current_setting('test.group_a')::uuid)
+     where display_name = 'Nome de exibição do Dono' and is_admin) then
+  raise exception 'Projeção de nomes e papéis incompleta para membro';
+ end if;
+ if exists(select from public.profiles where id <> auth.uid()) then
+  raise exception 'A RLS de perfis expôs outro usuário';
+ end if;
  if not private.has_group_admin_permission(current_setting('test.group_a')::uuid, 'manage_group')
    or private.has_group_admin_permission(current_setting('test.group_a')::uuid, 'manage_cycles') then raise exception 'Permissões configuráveis incorretas'; end if;
  update public.group_admin_permissions set manage_group = false where group_id = current_setting('test.group_a')::uuid;
@@ -162,6 +198,11 @@ end $$;
 select set_config('request.jwt.claim.sub', '33333333-3333-4333-8333-333333333333', true);
 do $$ begin
  if (select count(*) from public.groups) <> 1 then raise exception 'Participante não lê seu grupo'; end if;
+ if not exists(select from public.list_group_members(current_setting('test.group_a')::uuid)
+     where user_id = auth.uid() and not is_admin) or
+   exists(select from public.list_group_members(current_setting('test.group_b')::uuid)) then
+  raise exception 'Papéis ou isolamento incorretos para participante';
+ end if;
  update public.group_admin_permissions set manage_members = true;
  if found then raise exception 'Participante alterou configuração'; end if;
 end $$;

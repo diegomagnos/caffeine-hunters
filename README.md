@@ -2,7 +2,7 @@
 
 Plataforma Web responsiva, com experiência PWA, para clubes de degustação de cafés em grãos ou moídos. Cada clube poderá reunir participantes em um grupo privado, organizar ciclos, acompanhar contribuições, avaliar cafés e consultar rankings.
 
-O projeto possui uma **primeira interface demonstrativa navegável**: painel, grupos, detalhes de grupo, ciclo, avaliação e perfil responsivos, com dados fictícios. A área `/conta/` implementa autenticação, perfil e criação/listagem de grupos reais via Supabase quando configurada; veja [configuração, segurança e limitações de e-mail](docs/AUTH.md). Consulte o [registro da interface](docs/INITIAL_INTERFACE.md) para rotas, decisões e limitações. Este repositório continua sendo a fonte principal de conhecimento. As próximas etapas exigem autorização própria e revisão humana.
+O projeto possui uma **primeira interface demonstrativa navegável**: painel, grupos, detalhes de grupo, ciclo, avaliação e perfil responsivos, com dados fictícios. A área `/conta/` implementa autenticação, perfil, criação, listagem e detalhes de grupos reais via Supabase quando configurada; veja [configuração, segurança e limitações de e-mail](docs/AUTH.md). Consulte o [registro da interface](docs/INITIAL_INTERFACE.md) para rotas, decisões e limitações. Este repositório continua sendo a fonte principal de conhecimento. As próximas etapas exigem autorização própria e revisão humana.
 
 A implementação de grupos, migração necessária e roteiro de teste estão em [Grupos reais](docs/GROUPS.md).
 
@@ -141,7 +141,7 @@ Pages Free hospeda esta página sem serviço pago. Na documentação consultada,
 
 | Recurso futuro | Limite da exportação e decisão necessária |
 | --- | --- |
-| Autenticação, sessões e grupos privados | Auth e perfis usam o backend Supabase e PostgreSQL/RLS conforme [AUTH.md](docs/AUTH.md). Sem sessão SSR no Pages. Grupos privados ainda exigem implementação e políticas próprias; esconder conteúdo não protege dados. |
+| Autenticação, sessões e grupos privados | Auth e perfis usam o backend Supabase e PostgreSQL/RLS conforme [AUTH.md](docs/AUTH.md). Grupos privados usam as políticas de participação e as RPCs documentadas em [GROUPS.md](docs/GROUPS.md). A sessão é gerenciada no navegador pelo SDK Supabase. |
 | Grupos, contribuições, avaliações e PostgreSQL | Sem Server Actions, APIs por requisição ou gravação em banco. Escolher hospedagem dinâmica, persistência e isolamento antes de implementar. Nunca exportar dados privados para HTML ou payloads estáticos. |
 | Encerramento automático, IA e recálculos | Sem jobs/agendador ou processamento contínuo. Exigem infraestrutura, limites, custos e segurança próprios. |
 | Rotas de entidades e conteúdo atualizado | Rotas parametrizadas devem ser conhecidas no build (`generateStaticParams`); não há ISR ou SSR por requisição. Mudanças estáticas exigem novo build. |
