@@ -28,6 +28,35 @@ select pg_temp.assert(not has_function_privilege('anon', 'public.accept_group_in
 select pg_temp.assert(not has_function_privilege('authenticated', 'public.issue_group_invitation(uuid,uuid,text,uuid,text)', 'EXECUTE'), 'direct issuance');
 select pg_temp.assert(not has_function_privilege('authenticated', 'public.record_group_invitation_delivery(uuid,boolean)', 'EXECUTE'), 'forged delivery');
 
+-- Exercita EXECUTE com os papéis da Data API, mesmo com um UUID de Dono no corpo.
+create function pg_temp.assert_privileged_rpc_denied(owner_id uuid, group_id uuid) returns void
+language plpgsql as $$
+begin
+  begin
+    perform public.issue_group_invitation(owner_id, group_id, 'forged@example.test', null, repeat('ab',32));
+    raise exception 'API role % reached privileged issuance', current_user;
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.record_group_invitation_delivery(owner_id, true);
+    raise exception 'API role % reached privileged delivery update', current_user;
+  exception when insufficient_privilege then null;
+  end;
+end;
+$$;
+
+set role anon;
+select pg_temp.assert_privileged_rpc_denied(:'owner', :'main_group');
+reset role;
+select set_config('request.jwt.claim.sub', :'member', false);
+set role authenticated;
+select pg_temp.assert_privileged_rpc_denied(:'owner', :'main_group');
+reset role;
+select set_config('request.jwt.claim.sub', :'owner', false);
+set role authenticated;
+select pg_temp.assert_privileged_rpc_denied(:'owner', :'main_group');
+reset role;
+
 set role service_role;
 select * from public.issue_group_invitation(:'admin', :'main_group', ' EXISTING@EXAMPLE.TEST ', null,
   encode(sha256(decode(repeat('11',32), 'hex')), 'hex')) \gset existing_
@@ -111,6 +140,17 @@ select pg_temp.assert((select delivery_status = 'unconfirmed'
 select public.cancel_group_invitation(:'main_group', :'cancel_id');
 reset role;
 
+set role service_role;
+do $$
+begin
+  perform public.issue_group_invitation(current_setting('invitation_tests.admin')::uuid,
+    current_setting('invitation_tests.main_group')::uuid, ' CANCEL@EXAMPLE.TEST ', null, repeat('ab',32));
+  raise exception 'cancelling bypassed the recipient cooldown';
+exception when sqlstate 'PT429' then null;
+end;
+$$;
+reset role;
+
 update public.group_invitations set expires_at = now() - interval '1 second' where id = :'expired_id';
 update public.group_invitations set last_attempt_at = now() - interval '2 minutes' where id = :'new_id';
 set role service_role;
@@ -183,3 +223,52 @@ select pg_temp.assert((select count(*) = 2 from public.group_audit_events where 
   and action = 'invitation.accepted'), 'accept audit missing or duplicated');
 select pg_temp.assert((select count(*) = 8 from public.group_audit_events where group_id = :'main_group'
   and action in ('invitation.created','invitation.resent','invitation.cancelled','invitation.delivery_recorded')), 'administrative audit missing or duplicated');
+
+-- O limite do ator cruza grupos e o limite do grupo cruza administradores.
+begin;
+select set_config('request.jwt.claim.sub', :'owner', true);
+select public.create_group('Grupo no limite') as rate_group \gset
+select public.create_group('Grupo alternativo') as alternate_group \gset
+insert into public.group_members(group_id, user_id, is_admin)
+values (:'rate_group', :'admin', true), (:'rate_group', :'member', true),
+  (:'rate_group', :'existing', true), (:'alternate_group', :'existing', true);
+select set_config('invitation_tests.rate_group', :'rate_group', true);
+select set_config('invitation_tests.alternate_group', :'alternate_group', true);
+select set_config('invitation_tests.existing', :'existing', true);
+
+insert into public.group_audit_events(group_id, actor_id, action, created_at)
+select :'alternate_group', :'existing', 'invitation.resent', clock_timestamp() - interval '10 minutes'
+from generate_series(1, 9);
+insert into public.group_audit_events(group_id, actor_id, action, created_at)
+values (:'alternate_group', :'existing', 'invitation.created', clock_timestamp() - interval '61 minutes');
+set local role service_role;
+select * from public.issue_group_invitation(:'existing', :'rate_group', 'tenth@example.test', null, repeat('bb',32));
+do $$
+begin
+  perform public.issue_group_invitation(current_setting('invitation_tests.existing')::uuid,
+    current_setting('invitation_tests.alternate_group')::uuid, 'over-actor@example.test', null, repeat('cc',32));
+  raise exception 'actor quota bypassed via another group';
+exception when sqlstate 'PT429' then
+  if sqlerrm <> 'Administrator invitation rate limit' then raise; end if;
+end;
+$$;
+reset role;
+
+-- Uma emissão real mais 29 eventos recentes de outros atores enchem a cota.
+insert into public.group_audit_events(group_id, actor_id, action, created_at)
+select :'rate_group', :'owner', 'invitation.created', clock_timestamp() - interval '10 minutes'
+from generate_series(1, 29);
+set local role service_role;
+do $$
+begin
+  perform public.issue_group_invitation(current_setting('invitation_tests.member')::uuid,
+    current_setting('invitation_tests.rate_group')::uuid, 'over-group@example.test', null, repeat('dd',32));
+  raise exception 'group quota bypassed via another administrator';
+exception when sqlstate 'PT429' then
+  if sqlerrm <> 'Group invitation rate limit' then raise; end if;
+end;
+$$;
+reset role;
+select pg_temp.assert((select count(*) = 1 from public.group_invitations where group_id = :'rate_group'),
+  'a rate-limited request wrote an invitation');
+rollback;

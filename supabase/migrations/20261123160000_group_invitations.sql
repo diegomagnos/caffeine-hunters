@@ -17,6 +17,8 @@ create unique index group_invitations_open_email
   on public.group_invitations(group_id, email) where closed_at is null;
 create index group_invitations_group_created
   on public.group_invitations(group_id, created_at desc);
+create index group_invitations_email_attempt
+  on public.group_invitations(group_id, email, last_attempt_at desc);
 create index group_audit_events_invitation_actor
   on public.group_audit_events(actor_id, created_at)
   where action in ('invitation.created', 'invitation.resent');
@@ -44,7 +46,8 @@ language sql stable security definer set search_path = '' as $$
   order by i.created_at desc, i.id;
 $$;
 
--- Chamado somente pela Edge Function após validar o JWT com o Supabase Auth.
+-- EXECUTE fica restrito a service_role. A Edge Function obtém actor_id do Auth,
+-- e o papel do ator no grupo é conferido nesta transação.
 -- O grupo serializa emissões e cancelamentos. O aceite serializa na linha do convite.
 create function public.issue_group_invitation(
   actor_id uuid, target_group_id uuid, invited_email text, invitation_id uuid, token_digest text
@@ -104,6 +107,13 @@ begin
       last_attempt_at = issued_at, attempt_id = attempt, attempted_by = actor_id, delivery_status = 'pending'
     where i.id = invitation_id returning i.* into invitation;
   else
+    if exists (
+      select 1 from public.group_invitations i
+      where i.group_id = target_group_id and i.email = normalized_email
+        and i.closed_at is not null and i.last_attempt_at > issued_at - interval '1 minute'
+    ) then
+      raise exception 'Invitation recipient cooldown' using errcode = 'PT429';
+    end if;
     update public.group_invitations i
     set closed_at = issued_at, outcome = 'expired'
     where i.group_id = target_group_id and i.email = normalized_email
@@ -120,10 +130,10 @@ begin
     end if;
   end if;
 
-  insert into public.group_audit_events(group_id, actor_id, action, details)
+  insert into public.group_audit_events(group_id, actor_id, action, details, created_at)
   values (target_group_id, actor_id,
     case when invitation_id is null then 'invitation.created' else 'invitation.resent' end,
-    jsonb_build_object('invitation_id', invitation.id, 'attempt_id', attempt));
+    jsonb_build_object('invitation_id', invitation.id, 'attempt_id', attempt), issued_at);
 
   return query select invitation.id, invitation.email, name, attempt;
 end;
