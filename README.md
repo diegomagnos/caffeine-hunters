@@ -69,6 +69,7 @@ O instalador de dependências do navegador pode exigir permissões administrativ
 | `npm run preview:static` | Servidor local de `out/` em http://127.0.0.1:3000 |
 | `npm run test:static` | Testes contra `out/`, sem runtime Next.js |
 | `npm run test:rls` | Migração e autorização em PostgreSQL descartável via Docker |
+| `npm run test:invitations` | Validação do handler de convites com Auth, Data API e Resend simulados |
 | `npm run check:static` | Exportação e testes estáticos em sequência |
 
 Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de `npm test` isoladamente. Os testes em Chromium combinam projetos desktop/móvel, incluindo a área de conta e contratos simulados quando habilitados conforme [AUTH.md](docs/AUTH.md). Cobrem todas as telas: identificação do produto e erros de execução, navegação por teclado, ausência de overflow entre 320 e 1280 pixels e análise axe WCAG A/AA. Automação não substitui avaliação humana com leitores de tela nem testes em Safari/Firefox.
@@ -82,6 +83,7 @@ Deixe a porta 3000 livre ao executar os testes. Execute `npm run build` antes de
 - `tests/`: testes de navegador; `playwright.config.ts` controla projetos e servidor.
 - `.github/workflows/ci.yml`: verificações em PRs e na `main`, com permissões somente de leitura.
 - [Migrações Supabase em produção](docs/SUPABASE_MIGRATIONS.md) descreve a configuração, a reconciliação inicial e o workflow manual com aprovação.
+- [Edge Functions do Supabase em produção](docs/SUPABASE_EDGE_FUNCTIONS.md) descreve as credenciais de publicação, a validação, o workflow manual com aprovação e a recuperação.
 
 As [decisões técnicas](docs/TECHNICAL_FOUNDATION.md) detalham versões, justificativas, orçamento e pendências da fundação. A fundação de autenticação adiciona o SDK oficial Supabase e migração de perfis com RLS; nenhuma conta externa ou banco remoto foi configurado. A preparação de visualização estática está descrita abaixo; grupos reais usam RPC transacional e RLS conforme [GROUPS.md](docs/GROUPS.md). Outras operações e infraestrutura dinâmica futura exigem suas próprias entregas. PWA permanece futura.
 
