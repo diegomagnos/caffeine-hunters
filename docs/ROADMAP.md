@@ -6,7 +6,7 @@ Este é um plano proposto de entregas, sem datas ou autorização automática pa
 
 A consolidação documental (etapa 0) foi integrada no PR #2 e a [primeira interface demonstrativa](INITIAL_INTERFACE.md) no PR #5. O escopo atual autoriza a [fundação de autenticação e perfis com Supabase Free](AUTH.md), mantendo Cloudflare Pages e a demonstração pública. A migração, SDK e interface não configuram automaticamente contas ou produção; validação real e entrega pública de e-mails permanecem condicionadas aos passos manuais documentados. Além do recorte de grupos descrito abaixo, as demais operações das etapas 2–5 e PWA continuam futuras. O refinamento de Fundador/Dono e permissões está registrado nas regras de negócio.
 
-A etapa 2 já tem [criação, listagem e detalhes de grupos reais](GROUPS.md), com Fundador/Dono, permissões por grupo, RLS e auditoria. A entrega de [convites por e-mail](INVITATIONS.md) inclui ingresso com endereço confirmado e identificação da conta no cabeçalho. A ativação depende de migração aprovada, publicação da Edge Function e validação do provedor transacional. Gestão de administradores, transferência e saída serão tratadas em entregas próprias.
+A etapa 2 já tem [criação, listagem e detalhes de grupos reais](GROUPS.md), com Fundador/Dono, permissões por grupo, RLS e auditoria. Os [convites por e-mail](INVITATIONS.md) foram integrados no PR #15. A migração está aplicada em produção, o domínio do Resend foi verificado e os secrets de runtime estão no Supabase. A [publicação manual e aprovada da Edge Function](SUPABASE_EDGE_FUNCTIONS.md), a validação do gateway hospedado e o teste de envio e aceite reais seguem pendentes. Gestão de administradores, transferência e saída serão tratadas em entregas próprias.
 
 ## Fundação e MVP proposto
 
